@@ -1,10 +1,14 @@
 import { Config } from '@stencil/core';
-
-// https://stenciljs.com/docs/config
+import { sass } from '@stencil/sass';
+import builtins from 'rollup-plugin-node-builtins';
 
 export const config: Config = {
-  globalStyle: 'src/global/app.css',
+  globalStyle: 'src/global/app.scss',
   globalScript: 'src/global/app.ts',
+  plugins: [    
+    sass(),
+    builtins()
+  ],
   outputTargets: [
     {
       type: 'www',

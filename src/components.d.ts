@@ -7,53 +7,44 @@
 
 import '@stencil/core';
 
-import '@stencil/router';
-import '@stencil/state-tunnel';
-import {
-  MatchResults,
-} from '@stencil/router';
+
 
 
 export namespace Components {
 
-  interface AppHome {}
-  interface AppHomeAttributes extends StencilHTMLAttributes {}
-
-  interface AppProfile {
-    'match': MatchResults;
-  }
-  interface AppProfileAttributes extends StencilHTMLAttributes {
-    'match'?: MatchResults;
-  }
+  interface AppNav {}
+  interface AppNavAttributes extends StencilHTMLAttributes {}
 
   interface AppRoot {}
   interface AppRootAttributes extends StencilHTMLAttributes {}
+
+  interface ManageQuestions {}
+  interface ManageQuestionsAttributes extends StencilHTMLAttributes {}
+
+  interface StartQuiz {}
+  interface StartQuizAttributes extends StencilHTMLAttributes {}
 }
 
 declare global {
   interface StencilElementInterfaces {
-    'AppHome': Components.AppHome;
-    'AppProfile': Components.AppProfile;
+    'AppNav': Components.AppNav;
     'AppRoot': Components.AppRoot;
+    'ManageQuestions': Components.ManageQuestions;
+    'StartQuiz': Components.StartQuiz;
   }
 
   interface StencilIntrinsicElements {
-    'app-home': Components.AppHomeAttributes;
-    'app-profile': Components.AppProfileAttributes;
+    'app-nav': Components.AppNavAttributes;
     'app-root': Components.AppRootAttributes;
+    'manage-questions': Components.ManageQuestionsAttributes;
+    'start-quiz': Components.StartQuizAttributes;
   }
 
 
-  interface HTMLAppHomeElement extends Components.AppHome, HTMLStencilElement {}
-  var HTMLAppHomeElement: {
-    prototype: HTMLAppHomeElement;
-    new (): HTMLAppHomeElement;
-  };
-
-  interface HTMLAppProfileElement extends Components.AppProfile, HTMLStencilElement {}
-  var HTMLAppProfileElement: {
-    prototype: HTMLAppProfileElement;
-    new (): HTMLAppProfileElement;
+  interface HTMLAppNavElement extends Components.AppNav, HTMLStencilElement {}
+  var HTMLAppNavElement: {
+    prototype: HTMLAppNavElement;
+    new (): HTMLAppNavElement;
   };
 
   interface HTMLAppRootElement extends Components.AppRoot, HTMLStencilElement {}
@@ -62,16 +53,30 @@ declare global {
     new (): HTMLAppRootElement;
   };
 
+  interface HTMLManageQuestionsElement extends Components.ManageQuestions, HTMLStencilElement {}
+  var HTMLManageQuestionsElement: {
+    prototype: HTMLManageQuestionsElement;
+    new (): HTMLManageQuestionsElement;
+  };
+
+  interface HTMLStartQuizElement extends Components.StartQuiz, HTMLStencilElement {}
+  var HTMLStartQuizElement: {
+    prototype: HTMLStartQuizElement;
+    new (): HTMLStartQuizElement;
+  };
+
   interface HTMLElementTagNameMap {
-    'app-home': HTMLAppHomeElement
-    'app-profile': HTMLAppProfileElement
+    'app-nav': HTMLAppNavElement
     'app-root': HTMLAppRootElement
+    'manage-questions': HTMLManageQuestionsElement
+    'start-quiz': HTMLStartQuizElement
   }
 
   interface ElementTagNameMap {
-    'app-home': HTMLAppHomeElement;
-    'app-profile': HTMLAppProfileElement;
+    'app-nav': HTMLAppNavElement;
     'app-root': HTMLAppRootElement;
+    'manage-questions': HTMLManageQuestionsElement;
+    'start-quiz': HTMLStartQuizElement;
   }
 
 
