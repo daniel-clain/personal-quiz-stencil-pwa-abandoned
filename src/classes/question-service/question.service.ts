@@ -4,6 +4,8 @@ import { ITag } from "../../interfaces/tag.interface";
 
 export class QuestionService{
 
+  private static singletonInstance: QuestionService
+
   constructor(private dataService: DataService){}
 
 
@@ -19,5 +21,13 @@ export class QuestionService{
           )
         )
       )
+  }
+
+  public static getSingletonInstance(): QuestionService {
+    if(!this.singletonInstance){
+      const dataService: DataService = DataService.getSingletonInstance()
+      this.singletonInstance = new QuestionService(dataService)
+    }
+    return this.singletonInstance
   }
 }

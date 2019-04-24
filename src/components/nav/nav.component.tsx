@@ -2,11 +2,11 @@ import { Component } from '@stencil/core';
 
 
 @Component({
-  tag: 'app-nav',
+  tag: 'nav-component',
   styleUrl: '../../global/button.scss',
   shadow: true
 })
-export class AppNav {
+export class NavComponent {
   
 
   render() {

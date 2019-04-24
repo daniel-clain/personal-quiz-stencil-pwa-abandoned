@@ -12,40 +12,34 @@ import '@stencil/core';
 
 export namespace Components {
 
-  interface AppNav {}
-  interface AppNavAttributes extends StencilHTMLAttributes {}
-
   interface AppRoot {}
   interface AppRootAttributes extends StencilHTMLAttributes {}
 
-  interface ManageQuestions {}
-  interface ManageQuestionsAttributes extends StencilHTMLAttributes {}
+  interface NavComponent {}
+  interface NavComponentAttributes extends StencilHTMLAttributes {}
 
-  interface StartQuiz {}
-  interface StartQuizAttributes extends StencilHTMLAttributes {}
+  interface QuestionsComponent {}
+  interface QuestionsComponentAttributes extends StencilHTMLAttributes {}
+
+  interface QuizComponent {}
+  interface QuizComponentAttributes extends StencilHTMLAttributes {}
 }
 
 declare global {
   interface StencilElementInterfaces {
-    'AppNav': Components.AppNav;
     'AppRoot': Components.AppRoot;
-    'ManageQuestions': Components.ManageQuestions;
-    'StartQuiz': Components.StartQuiz;
+    'NavComponent': Components.NavComponent;
+    'QuestionsComponent': Components.QuestionsComponent;
+    'QuizComponent': Components.QuizComponent;
   }
 
   interface StencilIntrinsicElements {
-    'app-nav': Components.AppNavAttributes;
     'app-root': Components.AppRootAttributes;
-    'manage-questions': Components.ManageQuestionsAttributes;
-    'start-quiz': Components.StartQuizAttributes;
+    'nav-component': Components.NavComponentAttributes;
+    'questions-component': Components.QuestionsComponentAttributes;
+    'quiz-component': Components.QuizComponentAttributes;
   }
 
-
-  interface HTMLAppNavElement extends Components.AppNav, HTMLStencilElement {}
-  var HTMLAppNavElement: {
-    prototype: HTMLAppNavElement;
-    new (): HTMLAppNavElement;
-  };
 
   interface HTMLAppRootElement extends Components.AppRoot, HTMLStencilElement {}
   var HTMLAppRootElement: {
@@ -53,30 +47,36 @@ declare global {
     new (): HTMLAppRootElement;
   };
 
-  interface HTMLManageQuestionsElement extends Components.ManageQuestions, HTMLStencilElement {}
-  var HTMLManageQuestionsElement: {
-    prototype: HTMLManageQuestionsElement;
-    new (): HTMLManageQuestionsElement;
+  interface HTMLNavComponentElement extends Components.NavComponent, HTMLStencilElement {}
+  var HTMLNavComponentElement: {
+    prototype: HTMLNavComponentElement;
+    new (): HTMLNavComponentElement;
   };
 
-  interface HTMLStartQuizElement extends Components.StartQuiz, HTMLStencilElement {}
-  var HTMLStartQuizElement: {
-    prototype: HTMLStartQuizElement;
-    new (): HTMLStartQuizElement;
+  interface HTMLQuestionsComponentElement extends Components.QuestionsComponent, HTMLStencilElement {}
+  var HTMLQuestionsComponentElement: {
+    prototype: HTMLQuestionsComponentElement;
+    new (): HTMLQuestionsComponentElement;
+  };
+
+  interface HTMLQuizComponentElement extends Components.QuizComponent, HTMLStencilElement {}
+  var HTMLQuizComponentElement: {
+    prototype: HTMLQuizComponentElement;
+    new (): HTMLQuizComponentElement;
   };
 
   interface HTMLElementTagNameMap {
-    'app-nav': HTMLAppNavElement
     'app-root': HTMLAppRootElement
-    'manage-questions': HTMLManageQuestionsElement
-    'start-quiz': HTMLStartQuizElement
+    'nav-component': HTMLNavComponentElement
+    'questions-component': HTMLQuestionsComponentElement
+    'quiz-component': HTMLQuizComponentElement
   }
 
   interface ElementTagNameMap {
-    'app-nav': HTMLAppNavElement;
     'app-root': HTMLAppRootElement;
-    'manage-questions': HTMLManageQuestionsElement;
-    'start-quiz': HTMLStartQuizElement;
+    'nav-component': HTMLNavComponentElement;
+    'questions-component': HTMLQuestionsComponentElement;
+    'quiz-component': HTMLQuizComponentElement;
   }
 
 

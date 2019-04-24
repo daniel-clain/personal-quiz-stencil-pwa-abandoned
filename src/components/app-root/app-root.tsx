@@ -11,11 +11,18 @@ export class AppRoot {
   
 
   render() {
-    console.log('doing');
     return [
-      <app-nav></app-nav>,
-      this.view == 'Start Quiz' ?
-      <start-quiz></start-quiz> : <manage-questions></manage-questions>,
+      <header>
+        <nav-component></nav-component>
+      </header>,
+      <main>
+        {[
+          this.view == 'Start Quiz' &&
+          <quiz-component></quiz-component>,
+          this.view == 'Manage Questions' &&
+          <questions-component></questions-component>
+        ]}
+      </main>
     ]
   }
 }
