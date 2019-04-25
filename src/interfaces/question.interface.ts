@@ -1,4 +1,4 @@
-import { ITag } from "./tag.interface";
+import ITag from './tag.interface';
 
 export default interface IQuestion{
   id: string

@@ -7,11 +7,12 @@
     "build": "stencil build",
     "start": "stencil build --dev --watch --serve",
     "test": "stencil test --spec --e2e",
-    "test.watch": "stencil test --spec --e2e --watchAll"
+    "test.watch": "stencil test --spec --e2e --watchAll",
+    "serve": "serve www"
   },
   "dependencies": {
-    "@firebase/firestore-types": "^1.2.0",
-    "firebase": "^5.10.0"
+    "firebase": "^5.10.0",
+    "serve": "^11.0.0"
   },
   "license": "MIT",
   "devDependencies": {

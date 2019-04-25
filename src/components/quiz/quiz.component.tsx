@@ -1,11 +1,7 @@
 import { Component } from '@stencil/core';
 import { QuestionService } from '../../classes/question-service/question.service';
 
-@Component({
-  tag: 'quiz-component',
-  styleUrl: 'quiz.scss',
-  shadow: true
-})
+@Component({tag: 'quiz-component'})
 export class QuizComponent {
   private questionService: QuestionService
 

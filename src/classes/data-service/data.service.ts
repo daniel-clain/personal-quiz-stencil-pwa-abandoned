@@ -1,13 +1,12 @@
 import IQuestion from '../../interfaces/question.interface';
-import { Observable } from 'rxjs'
-import firebaseApp from 'firebase/app'
 import 'firebase/firestore'
-import 'firebase/auth'
-import { FirebaseFirestore  } from '@firebase/firestore-types'
+import firebase from 'firebase';
+import CollectionNames from '../../types/collection-names'
 
 export default class DataService{
 
   private static singletonInstance: DataService
+  private localDatabase: IDBDatabase
 
   private firebaseConfig = {
     apiKey: "AIzaSyB4ffPYSF_0sgjQJXt-GcnE0ifTBof4yTI",
@@ -18,35 +17,21 @@ export default class DataService{
     messagingSenderId: "1066599785491"
   }
 
-  private firestore: FirebaseFirestore
-  private auth: firebase.auth.Auth
-
-  connected: Observable<boolean>
-
   constructor(){
-    console.log('doing', firebaseApp);
-    const firebase = firebaseApp.initializeApp(this.firebaseConfig)
-
-    console.log('firebase', firebase);
-
-
-    this.firestore = firebase.firestore()
-    console.log(this.firestore);
-
-    this.auth = firebase.auth()
-    console.log('auth: ', this.auth);
-
-    this.showSignIn()
-    
-    
-
-
+    firebase.initializeApp(this.firebaseConfig)
+    const request = indexedDB.open('Personal Quiz Data')
+      request.onupgradeneeded = () => {
+        console.log('upgrade is called');
+        request.result.createObjectStore("Questions", { keyPath: "id" });
+        request.result.createObjectStore("Tags", { keyPath: "id" });
+      }
+      request.onsuccess = () => {
+        this.localDatabase = request.result
+      }
   }
 
-  showSignIn(){
-    this.auth.signInWithPopup(new firebaseApp.auth.FacebookAuthProvider())
+  
 
-  }
 
   
   getQuestions(): IQuestion[]{
@@ -71,6 +56,28 @@ export default class DataService{
     }
     return this.singletonInstance
   }
+
+  add(data: any, collection: CollectionNames){
+    data.id = '123'
+    const request: IDBRequest = this.localDatabase
+    .transaction([collection], 'readwrite')
+    .objectStore(collection)
+    .add(data)
+
+    request
+    .onsuccess = (e => console.log('success: ', e))
+    
+  }
+
+
+/*   update(data: any, collection: CollectionNames){
+    
+  }
+
+
+  delete(data: any, collection: CollectionNames){
+    
+  } */
 
 
 }

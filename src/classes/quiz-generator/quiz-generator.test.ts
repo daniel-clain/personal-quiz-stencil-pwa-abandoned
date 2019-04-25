@@ -1,4 +1,4 @@
-import {ITag} from './../../interfaces/tag.interface';
+import ITag from './../../interfaces/tag.interface';
 import { QuizGenertator } from "./quiz-generator";
 import { QuestionService } from '../question-service/question.service'
 import IQuiz from '../../interfaces/quiz.interface';

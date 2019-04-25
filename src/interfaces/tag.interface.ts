@@ -1,4 +1,4 @@
-export interface ITag{
+export default interface ITag{
   id: string
   name: string
 }

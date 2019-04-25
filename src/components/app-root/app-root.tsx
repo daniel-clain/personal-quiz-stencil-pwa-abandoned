@@ -1,13 +1,14 @@
-import { Component, State } from '@stencil/core';
+import { Component, State, Listen } from '@stencil/core';
 import { Views } from '../../types/views';
 
 
-@Component({
-  tag: 'app-root',
-  shadow: true
-})
+@Component({tag: 'app-root'})
 export class AppRoot {
   @State() view: Views = 'Start Quiz'
+  @Listen('viewSelected') 
+  onViewSelected(event: CustomEvent){
+    this.view = event.detail
+  }
   
 
   render() {

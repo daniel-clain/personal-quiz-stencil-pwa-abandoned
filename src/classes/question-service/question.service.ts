@@ -1,6 +1,6 @@
 import DataService from "../data-service/data.service";
 import IQuestion from "../../interfaces/question.interface";
-import { ITag } from "../../interfaces/tag.interface";
+import ITag from "../../interfaces/tag.interface";
 
 export class QuestionService{
 

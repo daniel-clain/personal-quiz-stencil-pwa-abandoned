@@ -8,6 +8,12 @@
 import '@stencil/core';
 
 
+import {
+  EventEmitter,
+} from '@stencil/core';
+import {
+  Views,
+} from './types/views';
 
 
 export namespace Components {
@@ -16,13 +22,18 @@ export namespace Components {
   interface AppRootAttributes extends StencilHTMLAttributes {}
 
   interface NavComponent {}
-  interface NavComponentAttributes extends StencilHTMLAttributes {}
+  interface NavComponentAttributes extends StencilHTMLAttributes {
+    'onViewSelected'?: (event: CustomEvent<Views>) => void;
+  }
 
   interface QuestionsComponent {}
   interface QuestionsComponentAttributes extends StencilHTMLAttributes {}
 
   interface QuizComponent {}
   interface QuizComponentAttributes extends StencilHTMLAttributes {}
+
+  interface TagsComponent {}
+  interface TagsComponentAttributes extends StencilHTMLAttributes {}
 }
 
 declare global {
@@ -31,6 +42,7 @@ declare global {
     'NavComponent': Components.NavComponent;
     'QuestionsComponent': Components.QuestionsComponent;
     'QuizComponent': Components.QuizComponent;
+    'TagsComponent': Components.TagsComponent;
   }
 
   interface StencilIntrinsicElements {
@@ -38,6 +50,7 @@ declare global {
     'nav-component': Components.NavComponentAttributes;
     'questions-component': Components.QuestionsComponentAttributes;
     'quiz-component': Components.QuizComponentAttributes;
+    'tags-component': Components.TagsComponentAttributes;
   }
 
 
@@ -65,11 +78,18 @@ declare global {
     new (): HTMLQuizComponentElement;
   };
 
+  interface HTMLTagsComponentElement extends Components.TagsComponent, HTMLStencilElement {}
+  var HTMLTagsComponentElement: {
+    prototype: HTMLTagsComponentElement;
+    new (): HTMLTagsComponentElement;
+  };
+
   interface HTMLElementTagNameMap {
     'app-root': HTMLAppRootElement
     'nav-component': HTMLNavComponentElement
     'questions-component': HTMLQuestionsComponentElement
     'quiz-component': HTMLQuizComponentElement
+    'tags-component': HTMLTagsComponentElement
   }
 
   interface ElementTagNameMap {
@@ -77,6 +97,7 @@ declare global {
     'nav-component': HTMLNavComponentElement;
     'questions-component': HTMLQuestionsComponentElement;
     'quiz-component': HTMLQuizComponentElement;
+    'tags-component': HTMLTagsComponentElement;
   }
 
 

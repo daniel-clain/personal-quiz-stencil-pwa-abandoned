@@ -1,23 +1,12 @@
-/*
-  Global App CSS
-  ----------------------
-  Use this file for styles that should be applied to all components.
-  For example, "font-family" within the "body" selector is a CSS property
-  most apps will want applied to all components.
 
-  Any global CSS variables should also be applied here.
-*/
-
-
-
-html{
+html {
   background-color: #172225;
   font-size: 87.5%;
   height: 100%;
 }
-body{
-  font-family: Helvetica, sans-serif;    
-  background: #43636B;
+body {
+  font-family: Helvetica, sans-serif;
+  background: #43636b;
   color: white;
   text-shadow: 1px 1px #222;
   padding: 1.5rem;
@@ -32,69 +21,91 @@ body{
 }
 
 
-input, textarea, select{
-  &:disabled{
-      background-color: #e4e4e4;
-      color: #82807f;
+input,
+textarea,
+select {
+  &:disabled {
+    background-color: #e4e4e4;
+    color: #82807f;
   }
 }
 
-.list{
-  &__item{    
-      background-color: #84979B;
-      margin-bottom: .2rem;
-      padding: .2rem .5rem;
+.list {
+  &__item {
+    background-color: #84979b;
+    margin-bottom: 0.2rem;
+    padding: 0.2rem 0.5rem;
   }
 }
 
-
-.field{
+.field {
   margin-bottom: 1rem;
-  &__name{
-      line-height: 1.5rem;
-      font-family: monospace;
-      font-size: 1.2rem;
+  &__name {
+    line-height: 1.5rem;
+    font-family: monospace;
+    font-size: 1.2rem;
   }
-  &__input, &__text-area{
-      display: block;
-      box-sizing: border-box;
-      font-family: Helvetica, sans-serif;  
-      padding: 0.5rem;
-      border-radius: 5px;
-      font-size: 1rem;
-      width: 100%;
-      margin-bottom: .2rem;
+  &__input,
+  &__text-area {
+    display: block;
+    box-sizing: border-box;
+    font-family: Helvetica, sans-serif;
+    padding: 0.5rem;
+    border-radius: 5px;
+    font-size: 1rem;
+    width: 100%;
+    margin-bottom: 0.2rem;
   }
-  &__text-area{
-      height: 6rem;
+  &__text-area {
+    height: 6rem;
   }
   &__checkboxes {
-      background: white;
-      color: black;
-      text-shadow: none;
-      padding: 1rem 1rem 0.5rem 1rem;
-      max-height: 6rem;
-      border-radius: 5px;
-      border: 1px solid #a9a9a9;
-      overflow-y: scroll;
+    background: white;
+    color: black;
+    text-shadow: none;
+    padding: 1rem 1rem 0.5rem 1rem;
+    max-height: 6rem;
+    border-radius: 5px;
+    border: 1px solid #a9a9a9;
+    overflow-y: scroll;
 
-      label{
-          width: 50%;
-          display: inline-block;
-          padding-right: 1rem;
-          box-sizing: border-box;
-          margin-bottom: 0.5rem;
+    label {
+      width: 50%;
+      display: inline-block;
+      padding-right: 1rem;
+      box-sizing: border-box;
+      margin-bottom: 0.5rem;
 
-          input{
-              vertical-align: middle;
-              height: 1rem;
-              margin: 0 0.2rem 0 0;
-          }
+      input {
+        vertical-align: middle;
+        height: 1rem;
+        margin: 0 0.2rem 0 0;
       }
+    }
 
-      &--disabled{
-          background-color: #e4e4e4;
-          color: #82807f;
-      }
+    &--disabled {
+      background-color: #e4e4e4;
+      color: #82807f;
+    }
+  }
+}
+
+button{
+  color: white;
+  background-color: #AD8C6B;
+  outline: none;
+  border-color: #8A6A4A;
+  padding: 4px 8px;
+  border-radius: 5px;
+  text-shadow: 1px 1px #222;
+  margin: 3px 5px 3px 0;
+  font-weight: 600;
+  font-family: monospace;
+  cursor: pointer;
+  font-size: 1.2rem;
+
+  &:active {
+      background: #8A6A4A;
+      border-color: #724E29;
   }
 }

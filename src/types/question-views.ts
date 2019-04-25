@@ -1,0 +1,1 @@
+export type QuestionViews = 'Questions List' | 'Tag Management'

@@ -1,7 +1,7 @@
 import IQuiz from "../../interfaces/quiz.interface";
 import { QuestionService } from "../question-service/question.service";
 import IQuestion from "../../interfaces/question.interface";
-import { ITag } from "../../interfaces/tag.interface";
+import ITag from "../../interfaces/tag.interface";
 import IQuestionWithRating from "../../interfaces/questionWithRating";
 import IQuestionWithRandomValue from "../../interfaces/questionWithRandomValue";
 import shuffle from "../../helper-functions/shuffle";
