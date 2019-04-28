@@ -2,10 +2,11 @@
 import { QuestionService } from "./question.service";
 import IQuestion from "../../interfaces/question.interface";
 import DataService from "../data-service/data.service";
+import { Observable, of } from "rxjs";
 
 class DataServiceMock extends DataService{
   connected
-  getQuestions(): IQuestion[]{
+  getQuestions(): Observable<IQuestion[]>{
     const questions: IQuestion[] =  [
       {
         id: null,
@@ -17,16 +18,16 @@ class DataServiceMock extends DataService{
         tags: []
       }
     ]
-    return questions
+    return of(questions)
   }
 }
 
 const mockDataServiceInstance: DataServiceMock =  new DataServiceMock()
 
 describe('getQuestionsByTag()', () => {
-  it('should return stub questions from mock data service and not real data service', () => {
+  it('should return stub questions from mock data service and not real data service', async () => {
     const testInstance = new QuestionService(mockDataServiceInstance)
-    const returnedQuestions: IQuestion[] = testInstance.getQuestionsByTag()
+    const returnedQuestions: IQuestion[] = await testInstance.getQuestionsByTag()
     expect(returnedQuestions).not.toBe(undefined)
     expect(returnedQuestions[0].value).not.toBe('x')
     expect(returnedQuestions[0].value).toBe('mock question')

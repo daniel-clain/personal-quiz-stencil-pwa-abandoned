@@ -36,7 +36,7 @@ const makeTestQuestions = (question: IQuestion, amount) => {
 let mockReturnedQuestions: IQuestion[]
 
 class MockQuestionService extends QuestionService{
-  getQuestionsByTag(_tags?: ITag[]): IQuestion[]{
+  getQuestionsByTag(_tags?: ITag[]): Promise<IQuestion[]>{
     return jest.fn().mockReturnValue(mockReturnedQuestions)()
   }
 }
@@ -55,7 +55,7 @@ describe ('generateQuiz()', () => {
           const tenBaseQuestions = makeTestQuestions(baseQuestion, 10)
           mockReturnedQuestions = tenBaseQuestions
 
-          describe('when test question has same correctnessRating as base questions but was asked 1 day MORE recently than base questions', () => {
+          describe('when test question has same correctnessRating as base questions but was asked 1 day MORE recently than base questions', async () => {
             const testQuestion: IQuestion = {
               id: 'test question',
               value: undefined,
@@ -69,7 +69,7 @@ describe ('generateQuiz()', () => {
             mockReturnedQuestions.push(testQuestion)
 
             const quizGeneratorInstance = new QuizGenertator(mockQuestionService)
-            const returnedQuiz: IQuiz = quizGeneratorInstance.generateQuiz()
+            const returnedQuiz: IQuiz = await quizGeneratorInstance.generateQuiz()
 
             test('should return 10 questions', () => {
               expect(returnedQuiz.questions.length).toBe(10)
@@ -87,7 +87,7 @@ describe ('generateQuiz()', () => {
             const tenBaseQuestions = makeTestQuestions(baseQuestion, 10)
             mockReturnedQuestions = tenBaseQuestions
 
-            test('returned quiz should include test question', () => {
+            test('returned quiz should include test question', async () => {
               const testQuestion: IQuestion = {
                 id: 'test question',
                 value: undefined,
@@ -101,7 +101,7 @@ describe ('generateQuiz()', () => {
               mockReturnedQuestions.push(testQuestion)
   
               const quizGeneratorInstance = new QuizGenertator(mockQuestionService)
-              const returnedQuiz: IQuiz = quizGeneratorInstance.generateQuiz()
+              const returnedQuiz: IQuiz = await quizGeneratorInstance.generateQuiz()
               expect(returnedQuiz.questions.some((question: IQuestion) => question.id == 'test question')).toBe(true)
             });
 

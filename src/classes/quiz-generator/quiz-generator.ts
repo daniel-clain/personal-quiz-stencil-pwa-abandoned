@@ -13,8 +13,8 @@ export class QuizGenertator{
   
   constructor(private questionService: QuestionService){}
 
-  public generateQuiz(quizTags?: ITag[]): IQuiz {
-    const tagFilteredQuestions: IQuestion[] = this.questionService.getQuestionsByTag(quizTags)
+  public async generateQuiz(quizTags?: ITag[]): Promise<IQuiz> {
+    const tagFilteredQuestions: IQuestion[] = await this.questionService.getQuestionsByTag(quizTags)
     return {
       questions: this.choseQuizQuestions(tagFilteredQuestions)
     }
@@ -28,7 +28,7 @@ export class QuizGenertator{
     .slice(0, this.questionsInQuiz)
     .map((questionsWithRandomValue: IQuestionWithRandomValue): IQuestion => {
       const {randomValue, ...question} = questionsWithRandomValue
-      return question
+      return question as IQuestion
     })
     return quizQuestions
   }

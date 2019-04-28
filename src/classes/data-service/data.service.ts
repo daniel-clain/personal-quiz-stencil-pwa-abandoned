@@ -2,6 +2,7 @@ import IQuestion from '../../interfaces/question.interface';
 import 'firebase/firestore'
 import firebase from 'firebase';
 import CollectionNames from '../../types/collection-names'
+import { Observable, of } from 'rxjs';
 
 export default class DataService{
 
@@ -34,7 +35,7 @@ export default class DataService{
 
 
   
-  getQuestions(): IQuestion[]{
+  getQuestions(): Observable<IQuestion[]>{
     const questions: IQuestion[] =  [
       {
         id: 'x',
@@ -46,7 +47,7 @@ export default class DataService{
         tags: []
       }
     ]
-    return questions
+    return of(questions)
   }
 
 
