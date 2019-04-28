@@ -14,7 +14,7 @@ export class TagsComponent {
 
   componentWillLoad(){
     this.tagService = TagService.getSingletonInstance()
-    this.tagService.tags$.subscribe((tags: ITag[]) => this.tags = tags)
+    this.tagService.getTags().then((tags: ITag[]) => this.tags = tags)
   }
 
 
@@ -52,6 +52,7 @@ export class TagsComponent {
 
   render() {
     return (
+      this.tags &&
       <div class='tag-management'>
         <h3>Add Tag</h3>
 

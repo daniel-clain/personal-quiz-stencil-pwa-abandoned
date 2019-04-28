@@ -9,7 +9,7 @@ export class AppRoot {
   onViewSelected(event: CustomEvent){
     this.view = event.detail
   }
-  
+
 
   render() {
     return [

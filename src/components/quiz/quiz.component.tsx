@@ -14,6 +14,7 @@ export class QuizComponent {
   private questionNumber: number
   private questionService: QuestionService
   @State() tags: ITag[]
+  @State() questions: IQuestion[]
   @State() quizTags: ITag[] = []
   @State() notEnoughQuestions: boolean = false
   private quizGenerator: QuizGenertator
@@ -21,7 +22,8 @@ export class QuizComponent {
   componentWillLoad() {
     this.questionService = QuestionService.getSingletonInstance()
     const tagService = TagService.getSingletonInstance()
-    tagService.tags$.subscribe((tags: ITag[]) => this.tags = tags)
+    tagService.getTags().then((tags: ITag[]) => this.tags = tags)
+    this.questionService.getQuestions().then((questions: IQuestion[]) => this.questions = questions)
     console.log(this.questionService)
     this.quizGenerator = new QuizGenertator(this.questionService)
     this.questionsInQuiz = this.quizGenerator.questionsInQuiz
@@ -67,19 +69,14 @@ export class QuizComponent {
     let currentQuestion: IQuestion =  this.activeQuiz ? this.activeQuiz.questions[this.questionNumber - 1] : null
 
     return ([
-      this.activeQuiz &&
-      <div>
-        q l{this.activeQuiz.questions.length} <br/> 
-        v{this.activeQuiz.questions[0].value}
-      </div>,
       this.notEnoughQuestions &&
       <div id='notEnoughQuestionsError'>
         <p>
           You currently dont have enough questions to run a quiz, you need at least {this.questionsInQuiz}. Add more questions and try again.
-            </p>
+        </p>
       </div>,
 
-      !this.activeQuiz && 
+      !this.activeQuiz && this.tags &&
       <div id="quizSetup">
         <div class="field">
           <span class="field__name">Select tags for next quiz: </span>

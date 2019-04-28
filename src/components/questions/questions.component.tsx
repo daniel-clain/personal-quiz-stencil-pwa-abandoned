@@ -12,49 +12,62 @@ export class QuestionsComponent {
   @State() questions: IQuestion[]
   @State() tags: ITag[]
   @State() newQuestion: IQuestion 
+  @State() selectedQuestion: IQuestion
   questionService: QuestionService
   tagService: TagService
-  selectedQuestion: IQuestion
 
   
   componentWillLoad(){
     this.questionService = QuestionService.getSingletonInstance()
     this.tagService = TagService.getSingletonInstance()
 
-    this.questionService.questions$.subscribe(
-      (questions: IQuestion[]) => this.questions = questions
-    )
-    this.tagService.tags$.subscribe(
-      (tags: ITag[]) => this.tags = tags
-    )
+    this.questions = this.questionService.questions
+    this.tagService.getTags().then((tags: ITag[]) => this.tags =  tags)
+    this.questionService.getQuestions().then((questions: IQuestion[]) => this.questions =  questions)
 
     this.resetNewQuestion()
 
   }  
 
+
   resetNewQuestion(){
     this.newQuestion = {
       id: null,
-      value: null,
+      value: '',
       dateLastAsked: null,
       dateLastUpdated: null,
-      correctAnswer: null,
+      correctAnswer: '',
       correctnessRating: null,
       tags: []
     }
+    console.log('new quest reset');
   }
 
   selectQuestion(question: IQuestion){
-    this.selectedQuestion = question
+    this.selectedQuestion = {...question}
   }
 
+
   addQuestion(){
+    if(!this.addQuestionValidation()){
+      return
+    }
+
+    this.questionService.add(this.newQuestion)
+    this.resetNewQuestion()
+  }
+
+  addQuestionValidation(): boolean{
+    
     if(!this.newQuestion.value || this.newQuestion.value == ''){
       console.log('can not submit new question because value is empty');
       return
     }
-    this.questionService.add(this.newQuestion)
-    this.resetNewQuestion()
+    if(!this.newQuestion.correctAnswer || this.newQuestion.correctAnswer == ''){
+      console.log('can not submit new question because correct answer is empty');
+      return
+    }
+    return true
   }
   
   selectedQestionValueChange(event){
@@ -83,18 +96,27 @@ export class QuestionsComponent {
     }
   }
 
+  questionValueInputHandler(event){
+    this.newQuestion.value = event.path[0].value
+  }
+
+  questionCorrectAnswerInputHandler(event){
+    this.newQuestion.correctAnswer = event.path[0].value
+  }
+
 
   render() {
     return (
+      this.tags &&
       <div class='question-management'>
         <h3>Add Question</h3>        
         <div class="field">
           <span class="field__name">Question: </span>
-          <input class="field__input" />
+          <input class="field__input" value={this.newQuestion.value} onInput={event => this.questionValueInputHandler(event)} />
         </div>
         <div class="field">
           <span class="field__name">Correct Answer: </span>
-          <textarea class="field__text-area field__input"></textarea>
+          <textarea class="field__text-area field__input" value={this.newQuestion.correctAnswer} onInput={event => this.questionCorrectAnswerInputHandler(event)}></textarea>
         </div>
         <div class="field">
           <span class="field__name">Tags: </span>
@@ -118,7 +140,7 @@ export class QuestionsComponent {
         <button onClick={() => this.questionView = 'Questions List'}>Questions List</button>
         <button onClick={() => this.questionView = 'Tag Management'}>Tag Management</button>
 
-        {this.questionView == 'Questions List' &&
+        {this.questionView == 'Questions List' && this.questions && 
           <div class="list">
             <h2>Questions List</h2>
             {this.questions.map((question: IQuestion) => ([
@@ -132,11 +154,11 @@ export class QuestionsComponent {
                 <h3>Edit Question: {question.value}</h3>
                 <div class="field">
                   <span class="field__name">Question: </span>
-                  <input class="field__input" onInput={event => this.selectedQestionValueChange(event)}/>
+                  <input class="field__input" value={this.selectedQuestion.value} onInput={event => this.selectedQestionValueChange(event)}/>
                 </div>
                 <div class="field">
                   <span class="field__name">Correct Answer: </span>
-                  <textarea class="field__text-area field__input" ></textarea>
+                  <textarea class="field__text-area field__input" >{this.selectedQuestion.correctAnswer}</textarea>
                 </div>
                 <div class="field">
                   <span class="field__name">Tags: </span>
@@ -144,7 +166,7 @@ export class QuestionsComponent {
                     {this.tags ?
                       this.tags.map((tag: ITag) => 
                         <label>
-                          <input type="checkbox" /> {tag.name}
+                          <input type="checkbox" checked={this.selectedQuestion.tags.some((questionTag: ITag) => questionTag.id == tag.id)} /> {tag.name}
                         </label>
                       )
                       :

@@ -1,23 +1,22 @@
 import DataService from "../data-service/data.service";
 import IQuestion from "../../interfaces/question.interface";
 import ITag from "../../interfaces/tag.interface";
-import { Observable } from "rxjs";
 import { CorrectnessRatings } from "../../types/correctness-rating";
 
 export class QuestionService{
 
   private static singletonInstance: QuestionService
-  questions$: Observable<IQuestion[]>
+  questions: IQuestion[]
 
   constructor(private dataService: DataService){
-    this.questions$ = dataService.getQuestions()
+    QuestionService.singletonInstance = this
   }
   
 
 
   getQuestionsByTag(tags?: ITag[]): Promise<IQuestion[]>{
     return new Promise((resolve) => {
-      this.dataService.getQuestions().subscribe(
+      this.dataService.getQuestions().then(
       (questions: IQuestion[]) => {
         if(!tags){
           resolve(questions)
@@ -37,10 +36,16 @@ export class QuestionService{
   public static getSingletonInstance(): QuestionService {
     if(!this.singletonInstance){
       const dataService: DataService = DataService.getSingletonInstance()
-      this.singletonInstance = new QuestionService(dataService)
+      new QuestionService(dataService)
     }
     return this.singletonInstance
   }
+
+  
+  getQuestions(): Promise<IQuestion[]>{
+    return this.dataService.getQuestions()
+  }
+
 
   
   add(question: IQuestion){
@@ -51,12 +56,12 @@ export class QuestionService{
   }
 
   update(question: IQuestion){
-    console.log('update question :', question);
+    this.dataService.update(question, 'Questions')
 
   }
 
   delete(question: IQuestion){
-    console.log('delete question :', question);
+    this.dataService.delete(question, 'Questions')
 
   }
 

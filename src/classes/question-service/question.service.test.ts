@@ -2,11 +2,10 @@
 import { QuestionService } from "./question.service";
 import IQuestion from "../../interfaces/question.interface";
 import DataService from "../data-service/data.service";
-import { Observable, of } from "rxjs";
 
 class DataServiceMock extends DataService{
   connected
-  getQuestions(): Observable<IQuestion[]>{
+  getQuestions(): Promise<IQuestion[]>{
     const questions: IQuestion[] =  [
       {
         id: null,
@@ -18,7 +17,7 @@ class DataServiceMock extends DataService{
         tags: []
       }
     ]
-    return of(questions)
+    return Promise.resolve(questions)
   }
 }
 
