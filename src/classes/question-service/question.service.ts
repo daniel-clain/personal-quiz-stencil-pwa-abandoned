@@ -2,6 +2,7 @@ import DataService from "../data-service/data.service";
 import IQuestion from "../../interfaces/question.interface";
 import ITag from "../../interfaces/tag.interface";
 import { Observable } from "rxjs";
+import { CorrectnessRatings } from "../../types/correctness-rating";
 
 export class QuestionService{
 
@@ -16,9 +17,8 @@ export class QuestionService{
 
   getQuestionsByTag(tags?: ITag[]): Promise<IQuestion[]>{
     return new Promise((resolve) => {
-      const subscription = this.dataService.getQuestions().subscribe(
+      this.dataService.getQuestions().subscribe(
       (questions: IQuestion[]) => {
-        subscription.unsubscribe()
         if(!tags){
           resolve(questions)
         }
@@ -31,8 +31,7 @@ export class QuestionService{
           )
         )
       })
-    });
-    
+    });    
   }
 
   public static getSingletonInstance(): QuestionService {
@@ -59,6 +58,25 @@ export class QuestionService{
   delete(question: IQuestion){
     console.log('delete question :', question);
 
+  }
+
+  updateCorrectnessRating(question: IQuestion, correctnessRating: CorrectnessRatings){
+    let qcr = question.correctnessRating
+    switch(correctnessRating){
+      case 'Correct' : {
+        qcr >=9 ? qcr = 10 : qcr ++
+      }; break
+      case 'Close' : {
+        qcr >=9.5 ? qcr = 10 : qcr += 0.5
+      }; break
+      case 'Kinda' : {
+        qcr <=0.5 ? qcr = 0 : qcr -= 0.5
+      }; break
+      case 'Incorrect' : {
+        qcr <=1 ? qcr = 0 : qcr --
+      }; break
+    }
+    this.update(question)
   }
   
 }

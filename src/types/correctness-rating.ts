@@ -1,4 +1,4 @@
-export type CorrectnessRating = 
+export type CorrectnessRatings = 
 'Incorrect' |
 'Kinda' |
 'Close' |

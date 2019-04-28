@@ -1,4 +1,5 @@
 import ITag from './tag.interface';
+import { CorrectnessRatings } from '../types/correctness-rating';
 
 export default interface IQuestion{
   id: string
@@ -8,4 +9,6 @@ export default interface IQuestion{
   dateLastAsked: Date
   dateLastUpdated: Date
   tags: ITag[]
+  answer?: string
+  markedAs?: CorrectnessRatings
 }

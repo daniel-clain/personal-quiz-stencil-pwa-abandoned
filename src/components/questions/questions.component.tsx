@@ -112,7 +112,6 @@ export class QuestionsComponent {
           </div>
         </div>
         <button onClick={() => this.addQuestion()}>Submit</button>
-    
 
         <hr />
 

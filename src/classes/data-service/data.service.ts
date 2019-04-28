@@ -36,8 +36,9 @@ export default class DataService{
 
   
   getQuestions(): Observable<IQuestion[]>{
-    const questions: IQuestion[] =  [
-      {
+    const questions: IQuestion[] =  []
+    for(;questions.length < 10;){
+      questions.push({
         id: 'x',
         value: 'x',
         correctAnswer: 'x',
@@ -45,8 +46,10 @@ export default class DataService{
         dateLastAsked: new Date(),
         dateLastUpdated: new Date(),
         tags: []
-      }
-    ]
+      })
+      console.log(questions.length);
+    }
+
     return of(questions)
   }
 

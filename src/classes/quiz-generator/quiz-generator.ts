@@ -9,19 +9,22 @@ import random from "../../helper-functions/random";
 
 export class QuizGenertator{
 
-  private questionsInQuiz = 10
+  questionsInQuiz = 10
   
   constructor(private questionService: QuestionService){}
 
   public async generateQuiz(quizTags?: ITag[]): Promise<IQuiz> {
     const tagFilteredQuestions: IQuestion[] = await this.questionService.getQuestionsByTag(quizTags)
-    return {
-      questions: this.choseQuizQuestions(tagFilteredQuestions)
-    }
+    return this.choseQuizQuestions(tagFilteredQuestions)
+    .then((questions: IQuestion[]) => Promise.resolve({questions: questions} as IQuiz))
   }
 
-  private choseQuizQuestions(tagFilteredQuestions: IQuestion[]): IQuestion[]{
-    const questionsWithRating: IQuestionWithRating[] =  this.rateQuestions(tagFilteredQuestions)
+  private choseQuizQuestions(tagFilteredQuestions: IQuestion[]): Promise<IQuestion[]>{
+    return new Promise((resolve, reject) => {
+      if(tagFilteredQuestions.length < this.questionsInQuiz){
+        reject('Not Enough Questions')
+      }
+      const questionsWithRating: IQuestionWithRating[] =  this.rateQuestions(tagFilteredQuestions)
     const questionsWithRandomValue: IQuestionWithRandomValue[] =  this.assignQuestionsRandomValue(questionsWithRating)
     const quizQuestions: IQuestion[] = shuffle(questionsWithRandomValue)
     .sort((a, b) => a.randomValue - b.randomValue)
@@ -30,7 +33,9 @@ export class QuizGenertator{
       const {randomValue, ...question} = questionsWithRandomValue
       return question as IQuestion
     })
-    return quizQuestions
+    resolve(quizQuestions)
+    });
+    
   }
 
   // rating is based on question correctness and how long since last asked relative to other questions

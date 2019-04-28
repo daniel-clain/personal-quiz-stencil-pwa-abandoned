@@ -56,7 +56,7 @@ export class TagsComponent {
         <h3>Add Tag</h3>
 
           <span class="field__name">Tag Name: </span>
-          <input class="field__input" onInput={event => this.updateTagName(event)}/>
+          <input class="field__input" value={this.newTag.name} onInput={event => this.updateTagName(event)}/>
           <button onClick={() => this.submitNewTag()}>Submit</button>
 
         <hr/>
