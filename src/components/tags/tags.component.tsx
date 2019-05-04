@@ -6,29 +6,32 @@ import { TagService } from '../../classes/tag-service/tag.service';
 export class TagsComponent {
   @State() tags: ITag[] = []
   @State() selectedTag: ITag
-  @State() newTag: ITag = {
-    id: null,
-    name: null
-  }
+  @State() newTag: ITag
   tagService: TagService
 
   componentWillLoad(){
     this.tagService = TagService.getSingletonInstance()
     this.tagService.getTags().then((tags: ITag[]) => this.tags = tags)
+    this.resetNewTag()
   }
 
+  resetNewTag(){
+    this.newTag = {
+      id: null,
+      dateLastUpdated: null,
+      name: null
+    }
+  }
 
   submitNewTag(){
     if(!this.newTag.name){
       return
     }
     this.tagService.add(this.newTag)
-    this.newTag = {
-      id: null,
-      name: null
-    }
+    this.resetNewTag()
     
   }
+  
   submitUpdatedTag(){
     this.tagService.update(this.selectedTag)
   }

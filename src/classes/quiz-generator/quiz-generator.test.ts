@@ -1,8 +1,9 @@
-import ITag from './../../interfaces/tag.interface';
+
 import { QuizGenertator } from "./quiz-generator";
 import { QuestionService } from '../question-service/question.service'
 import IQuiz from '../../interfaces/quiz.interface';
 import IQuestion from '../../interfaces/question.interface';
+import ITag from '../../interfaces/tag.interface';
 
 let highestRandomValue = jest.fn().mockReturnValue(1)
 
