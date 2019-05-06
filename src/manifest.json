@@ -1,13 +1,13 @@
 {
-  "name": "Stencil Starter",
-  "short_name": "Stencil",
+  "name": "Personal Quiz",
+  "short_name": "Personal Quiz",
   "start_url": "/",
   "display": "standalone",
   "icons": [{
-    "src": "assets/icon/icon.png",
+    "src": "assets/icon/pqicon.png",
     "sizes": "512x512",
     "type": "image/png"
   }],
-  "background_color": "#16161d",
-  "theme_color": "#16161d"
+  "background_color": "#172225",
+  "theme_color": "#172225"
 }
