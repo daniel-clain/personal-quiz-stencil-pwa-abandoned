@@ -1,4 +1,3 @@
-
 trigger:
   branches:
     include:
@@ -7,19 +6,11 @@ trigger:
 steps:
 - task: Npm@1
   displayName: Install Dependencies
-  condition: always()
   inputs: 
     command: custom
     customCommand: ci
-    verbose: false
 - script: npm run build
   displayName: Build Production App
-- script: |
-    echo Build.ArtifactStagingDirectory = $(Build.ArtifactStagingDirectory)
-    echo Build.SourcesDirectory = $(Build.SourcesDirectory)
-    echo ls build source directory www
-    ls $(Build.SourcesDirectory)/www
-  displayName: Echo variables
 
 - task: PublishBuildArtifacts@1
   inputs:
