@@ -12,18 +12,18 @@ steps:
     command: custom
     customCommand: ci
     verbose: false
-- script: npm run build-prod
+- script: npm run build
   displayName: Build Production App
 - script: |
     echo Build.ArtifactStagingDirectory = $(Build.ArtifactStagingDirectory)
     echo Build.SourcesDirectory = $(Build.SourcesDirectory)
-    echo ls build source directory dist
-    ls $(Build.SourcesDirectory)/dist
+    echo ls build source directory www
+    ls $(Build.SourcesDirectory)/www
   displayName: Echo variables
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: $(Build.SourcesDirectory)/dist/PersonalQuiz
+    PathtoPublish: $(Build.SourcesDirectory)/www
     ArtifactName: ProductionArtifact
   displayName: Publish Build Artifacts
     
