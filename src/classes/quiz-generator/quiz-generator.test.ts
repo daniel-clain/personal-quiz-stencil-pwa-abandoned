@@ -1,6 +1,6 @@
 
 import { QuizGenertator } from "./quiz-generator";
-import { QuestionService } from '../question-service/question.service'
+import { QuestionService } from "../question-service/question.service";
 import IQuiz from '../../interfaces/quiz.interface';
 import IQuestion from '../../interfaces/question.interface';
 import ITag from '../../interfaces/tag.interface';
@@ -104,12 +104,11 @@ describe ('generateQuiz()', () => {
               const quizGeneratorInstance = new QuizGenertator(mockQuestionService)
               const returnedQuiz: IQuiz = await quizGeneratorInstance.generateQuiz()
               expect(returnedQuiz.questions.some((question: IQuestion) => question.id == 'test question')).toBe(true)
-            });
+            })
 
-          })
-          
-        });
-      });
-    });
-  });
-});
+          })          
+        })
+      })
+    })
+  })
+})

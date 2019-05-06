@@ -36,20 +36,6 @@ describe('getQuestionsByTag()', () => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* xdescribe ('getQuestionsByTag', () => {
   
   describe ('test 2 questions where each one has a tag that matches one of the 2 argument tags', () => {    

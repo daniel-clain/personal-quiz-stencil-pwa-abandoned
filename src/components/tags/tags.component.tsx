@@ -1,39 +1,39 @@
 import { Component, State } from '@stencil/core';
 import ITag from '../../interfaces/tag.interface';
-import { TagService } from '../../classes/tag-service/tag.service';
+import DataService from '../../classes/data-service/data.service';
 
 @Component({ tag: 'tags-component' })
 export class TagsComponent {
   @State() tags: ITag[] = []
   @State() selectedTag: ITag
   @State() newTag: ITag
-  tagService: TagService
+  dataService: DataService
 
   componentWillLoad(){
-    this.tagService = TagService.getSingletonInstance()
-    this.tagService.getTags().then((tags: ITag[]) => this.tags = tags)
+    this.dataService = DataService.getSingletonInstance()
+    this.dataService.tags$.subscribe((tags: ITag[]) => this.tags = [...tags])
     this.resetNewTag()
   }
-
+  
   resetNewTag(){
     this.newTag = {
       id: null,
       dateLastUpdated: null,
-      name: null
+      value: null
     }
   }
 
   submitNewTag(){
-    if(!this.newTag.name){
+    if(!this.newTag.value){
       return
     }
-    this.tagService.add(this.newTag)
+    this.dataService.add(this.newTag, 'Tags')
     this.resetNewTag()
     
   }
   
   submitUpdatedTag(){
-    this.tagService.update(this.selectedTag)
+    this.dataService.update(this.selectedTag, 'Tags')
   }
 
   selectTag(tag){
@@ -41,16 +41,16 @@ export class TagsComponent {
   }
 
   deleteTag(){
-    const deleteConfirmed: boolean = window.confirm(`Are you sure you want to delete tag: \n\n ${this.selectedTag.name}`)
+    const deleteConfirmed: boolean = window.confirm(`Are you sure you want to delete tag: \n\n ${this.selectedTag.value}`)
 
     if(deleteConfirmed){
-      this.tagService.delete(this.selectedTag)
+      this.dataService.delete(this.selectedTag, 'Tags')
     }
   }
 
 
   updateTagName(event){
-    this.newTag.name = event.path[0].value
+    this.newTag.value = event.path[0].value
   }
 
   render() {
@@ -60,7 +60,7 @@ export class TagsComponent {
         <h3>Add Tag</h3>
 
           <span class="field__name">Tag Name: </span>
-          <input class="field__input" value={this.newTag.name} onInput={event => this.updateTagName(event)}/>
+          <input class="field__input" value={this.newTag.value} onInput={event => this.updateTagName(event)}/>
           <button onClick={() => this.submitNewTag()}>Submit</button>
 
         <hr/>
@@ -70,10 +70,10 @@ export class TagsComponent {
             return this.selectedTag && this.selectedTag.id == tag.id ?
               <div class="list__item--expanded">
                 <hr/>
-                <h3>Edit Tag: { tag.name }</h3>
+                <h3>Edit Tag: { tag.value }</h3>
                 <div class="field">
                   <span class="field__name">Tag: </span>
-                  <input class="field__input" value={this.selectedTag.name}/>
+                  <input class="field__input" value={this.selectedTag.value}/>
                 </div>
 
                 <button onClick={() => this.submitUpdatedTag()}>Update</button>
@@ -83,7 +83,7 @@ export class TagsComponent {
               </div>
               :
               <div class="list__item" onClick={() => this.selectTag(tag)}>
-                { tag.name }
+                { tag.value }
               </div>
         })}
       </div>

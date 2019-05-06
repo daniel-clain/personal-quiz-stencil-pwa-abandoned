@@ -1,5 +1,5 @@
 export type CorrectnessRatings = 
 'Incorrect' |
 'Kinda' |
-'Close' |
+'Almost' |
 'Correct'

@@ -2,8 +2,8 @@ import { Component, State } from '@stencil/core';
 import { QuestionViews } from '../../types/question-views';
 import IQuestion from '../../interfaces/question.interface';
 import ITag from '../../interfaces/tag.interface';
-import { QuestionService } from '../../classes/question-service/question.service';
-import { TagService } from '../../classes/tag-service/tag.service';
+import { QuestionService } from "../../classes/question-service/question.service";
+import DataService from '../../classes/data-service/data.service';
 
 @Component({tag: 'questions-component'})
 export class QuestionsComponent {
@@ -14,21 +14,21 @@ export class QuestionsComponent {
   @State() newQuestion: IQuestion 
   @State() selectedQuestion: IQuestion
   questionService: QuestionService
-  tagService: TagService
+  dataService: DataService
 
   
   componentWillLoad(){
     this.questionService = QuestionService.getSingletonInstance()
-    this.tagService = TagService.getSingletonInstance()
+    this.dataService = DataService.getSingletonInstance()
 
-    this.questions = this.questionService.questions
-    this.tagService.getTags().then((tags: ITag[]) => this.tags =  tags)
-    this.questionService.getQuestions().then((questions: IQuestion[]) => this.questions =  questions)
+    this.dataService.tags$.subscribe((tags: ITag[]) => {
+      console.log('tag service subscribe tags', tags);
+      this.tags = [...tags]
+    })
+    this.dataService.questions$.subscribe((questions: IQuestion[]) => this.questions = [...questions])
 
     this.resetNewQuestion()
-
   }  
-
 
   resetNewQuestion(){
     this.newQuestion = {
@@ -40,7 +40,6 @@ export class QuestionsComponent {
       correctnessRating: null,
       tags: []
     }
-    console.log('new quest reset');
   }
 
   selectQuestion(question: IQuestion){
@@ -53,7 +52,7 @@ export class QuestionsComponent {
       return
     }
 
-    this.questionService.add(this.newQuestion)
+    this.dataService.add(this.newQuestion, 'Questions')
     this.resetNewQuestion()
   }
 
@@ -75,24 +74,24 @@ export class QuestionsComponent {
   }
 
   updateQuestion(){
-    this.questionService.update(this.selectedQuestion)
-  }
-
-  deleteQuestion(){
-    this.questionService.delete(this.selectedQuestion)
+    this.dataService.update(this.selectedQuestion, 'Questions')
     this.selectQuestion(null)
   }
 
+  deleteQuestion(){
+    this.dataService.delete(this.selectedQuestion, 'Questions')
+    this.selectQuestion(null)
+  }
 
-  toggleQuestionTag(tag: ITag){
-    const questionHasTag: boolean = this.newQuestion.tags.some(
+  toggleQuestionTag(tag: ITag, type: string){
+    const questionHasTag: boolean = this[type+'Question'].tags.some(
       (questionTag: ITag) => tag.id == questionTag.id
     )
 
     if(questionHasTag){
-      this.newQuestion.tags.filter((questionTag: ITag) => tag.id != questionTag.id)
+      this[type+'Question'].tags = this[type+'Question'].tags.filter((questionTag: ITag) => tag.id != questionTag.id)
     } else {
-      this.newQuestion.tags.push(tag)
+      this[type+'Question'].tags.push(tag)
     }
   }
 
@@ -126,9 +125,9 @@ export class QuestionsComponent {
                 <input 
                   type="checkbox" 
                   checked={this.newQuestion.tags.some((questionTag: ITag) => questionTag.id == tag.id)}
-                  onClick={() => this.toggleQuestionTag(tag)} 
+                  onClick={() => this.toggleQuestionTag(tag, 'new')} 
                 /> 
-                {tag.name}
+                {tag.value}
               </label>
             ))}
           </div>
@@ -136,9 +135,16 @@ export class QuestionsComponent {
         <button onClick={() => this.addQuestion()}>Submit</button>
 
         <hr />
-
-        <button onClick={() => this.questionView = 'Questions List'}>Questions List</button>
-        <button onClick={() => this.questionView = 'Tag Management'}>Tag Management</button>
+        <button 
+          class={this.questionView == 'Questions List' ? 'selected' : ''} 
+          onClick={() => this.questionView = 'Questions List'}>
+          Questions List
+        </button>
+        <button 
+          class={this.questionView == 'Tag Management' ? 'selected' : ''} 
+          onClick={() => this.questionView = 'Tag Management'}>
+          Tag Management
+        </button>
 
         {this.questionView == 'Questions List' && this.questions && 
           <div class="list">
@@ -166,15 +172,16 @@ export class QuestionsComponent {
                     {this.tags ?
                       this.tags.map((tag: ITag) => 
                         <label>
-                          <input type="checkbox" checked={this.selectedQuestion.tags.some((questionTag: ITag) => questionTag.id == tag.id)} /> {tag.name}
+                          <input type="checkbox" 
+                          checked={this.selectedQuestion.tags.some((questionTag: ITag) => questionTag.id == tag.id)}
+                          onClick={() => this.toggleQuestionTag(tag, 'selected')} /> {tag.value}
                         </label>
                       )
                       :
                       <label>
                         Got to 'Tag Management' to create tags...
                       </label>
-                    }
-                    
+                    }                    
                   </div>
                 </div>
                 <button onClick={() => this.updateQuestion()}>Update</button>

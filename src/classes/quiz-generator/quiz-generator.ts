@@ -14,10 +14,20 @@ export class QuizGenertator{
   constructor(private questionService: QuestionService){}
 
   public async generateQuiz(quizTags?: ITag[]): Promise<IQuiz> {
-    const tagFilteredQuestions: IQuestion[] = await this.questionService.getQuestionsByTag(quizTags)
-    return this.choseQuizQuestions(tagFilteredQuestions)
-    .then((questions: IQuestion[]) => Promise.resolve({questions: questions} as IQuiz))
+    return new Promise(resolve => {      
+      this.questionService.getQuestionsByTag(quizTags).then(
+        (tagFilteredQuestions: IQuestion[]) => {
+          this.choseQuizQuestions(tagFilteredQuestions).then(
+            (questions: IQuestion[]) => {
+              const quiz: IQuiz = new IQuiz(questions)
+              resolve(quiz)
+            }
+          )
+        }
+      )
+    });
   }
+  
 
   private choseQuizQuestions(tagFilteredQuestions: IQuestion[]): Promise<IQuestion[]>{
     return new Promise((resolve, reject) => {
@@ -53,14 +63,22 @@ export class QuizGenertator{
     const sortedDates = datesArray.sort()
     const longestAgo = sortedDates[0]
     const mostRecentDate = sortedDates[sortedDates.length - 1]
+    if(!longestAgo || !mostRecentDate){
+      return {
+        mostRecentDate: null, 
+        lastAskedDaysRange: null
+      }
+    }
     const diffTime = Math.abs(mostRecentDate.getTime() - longestAgo.getTime());
     const lastAskedDaysRange = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
     return {mostRecentDate, lastAskedDaysRange}
   }
 
+
+
   // the longer its been since a question has been asked, the lower its rating should be
   private getLastAskedRating(mostRecent: Date, questionDate: Date, dayRange: number): number{
-    if(dayRange == 0)
+    if(dayRange == 0 || dayRange == null)
       return 10
     const diffTime = Math.abs(mostRecent.getTime() - questionDate.getTime());
     const lastAskedDaysSinceMostRecent = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 

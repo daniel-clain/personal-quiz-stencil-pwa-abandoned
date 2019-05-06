@@ -1,17 +1,16 @@
 import { Component, State } from '@stencil/core';
-import { QuestionService } from '../../classes/question-service/question.service';
+import { QuestionService } from "../../classes/question-service/question.service";
 import ITag from '../../interfaces/tag.interface';
 import IQuiz from '../../interfaces/quiz.interface';
 import { CorrectnessRatings } from '../../types/correctness-rating';
 import IQuestion from '../../interfaces/question.interface';
 import { QuizGenertator } from '../../classes/quiz-generator/quiz-generator';
-import { TagService } from '../../classes/tag-service/tag.service';
+import DataService from '../../classes/data-service/data.service';
 
 @Component({ tag: 'quiz-component' })
 export class QuizComponent {
   @State() activeQuiz: IQuiz
   private questionsInQuiz: number
-  private questionNumber: number
   private questionService: QuestionService
   @State() tags: ITag[]
   @State() questions: IQuestion[]
@@ -21,16 +20,11 @@ export class QuizComponent {
 
   componentWillLoad() {
     this.questionService = QuestionService.getSingletonInstance()
-    const tagService = TagService.getSingletonInstance()
-    tagService.getTags().then((tags: ITag[]) => this.tags = tags)
-    this.questionService.getQuestions().then((questions: IQuestion[]) => this.questions = questions)
-    console.log(this.questionService)
+    const dataService = DataService.getSingletonInstance()
+    dataService.tags$.subscribe((tags: ITag[]) => this.tags = tags)
+    dataService.questions$.subscribe((questions: IQuestion[]) => this.questions = questions)
     this.quizGenerator = new QuizGenertator(this.questionService)
     this.questionsInQuiz = this.quizGenerator.questionsInQuiz
-  }
-
-  submitAnswer(){
-
   }
   toggleQuizTag(tag: ITag){
     const alreadyInTheList = this.quizTags.some((quizTag: ITag) => quizTag.id == tag.id)
@@ -39,34 +33,54 @@ export class QuizComponent {
     } else {
       this.quizTags.push(tag)
     }
-
   }
   
+  answerValueChange(event){
+    this.activeQuiz.answerValue =  event.path[0].value
+  }
 
   async startQuiz(){
-    this.questionNumber = 1
     this.quizGenerator.generateQuiz()
     .then(
-      (quiz: IQuiz) => this.activeQuiz = quiz,
+      (quiz: IQuiz) => {
+        this.activeQuiz = quiz
+      },
       (reason) => this.notEnoughQuestions = (reason == 'Not Enough Questions')
     )
   }
 
-  markAnswer(question: IQuestion, correctnessRating: CorrectnessRatings){
-    this.questionService.updateCorrectnessRating(question, correctnessRating)
+  submitAnswer(){
+    this.activeQuiz = {...this.activeQuiz, answerSubmitted: true}
+  }
+
+  markAnswer(correctnessRating: CorrectnessRatings){
+    this.activeQuiz = {...this.activeQuiz, markedAs: correctnessRating}
   }
 
   nextQuestion(){
-    this.questionNumber ++
-  }
-  
-  quizComplete(){
-    console.log('quiz completed');
+    this.saveAnsweredQuestion()
+    this.activeQuiz = {
+      ...this.activeQuiz, 
+      answerSubmitted: false, 
+      answerValue: '',
+      markedAs: null,
+      questionNumber: this.activeQuiz.questionNumber + 1
+    }
+  }  
 
+  quizComplete(){
+    this.saveAnsweredQuestion()
+    this.activeQuiz = null
+  }
+
+  saveAnsweredQuestion(){
+    const currentQuestion = this.activeQuiz.questions[this.activeQuiz.questionNumber - 1]
+    this.questionService.updateCorrectnessRating(currentQuestion, this.activeQuiz.markedAs)
   }
 
   render() {
-    let currentQuestion: IQuestion =  this.activeQuiz ? this.activeQuiz.questions[this.questionNumber - 1] : null
+    let ac = this.activeQuiz
+    let currentQuestion: IQuestion =  ac ? ac.questions[ac.questionNumber - 1] : null
 
     return ([
       this.notEnoughQuestions &&
@@ -76,7 +90,7 @@ export class QuizComponent {
         </p>
       </div>,
 
-      !this.activeQuiz && this.tags &&
+      !ac && this.tags &&
       <div id="quizSetup">
         <div class="field">
           <span class="field__name">Select tags for next quiz: </span>
@@ -86,7 +100,7 @@ export class QuizComponent {
                 <input 
                   type="checkbox" 
                   checked={this.quizTags.some((quizTag: ITag) => quizTag.id == tag.id)}
-                  onClick={() => this.toggleQuizTag(tag)} /> { tag.name }
+                  onClick={() => this.toggleQuizTag(tag)} /> { tag.value }
             </label>
           ))}
           </div>
@@ -94,38 +108,57 @@ export class QuizComponent {
         <button onClick={() => this.startQuiz()}>Start Quiz</button>
       </div>,
 
-      this.activeQuiz &&
+ac &&
         <div id="quiz">
-          <h3>Question { this.questionNumber } of { this.questionsInQuiz }</h3>
+          <h3>Question {ac.questionNumber } of { this.questionsInQuiz }</h3>
           <div class="quiz-question">{ currentQuestion.value }</div>
-
-          <form onSubmit={() => this.submitAnswer()}>
-            <div class="field">
-              <span class="field__name">Your Answer: </span><br />
-              <textarea
-                class="field__text-area field__input"
-                readonly={currentQuestion.answer}>
-              </textarea>
-            </div>
-            <button disabled={!!currentQuestion.answer}>Submit</button >
-          </form >
-          {currentQuestion && currentQuestion.answer && 
-          <div>
+          <div class="field">
+            <span class="field__name">Your Answer: </span><br />
+            <textarea
+              class={`field__text-area field__input ${ac.answerSubmitted && 'field__text-area--disabled'}`}
+              onInput={event => this.answerValueChange(event)}
+              value={ac.answerValue}
+              readonly={ac.answerSubmitted}>
+            </textarea>
+          </div>
+          {!ac.answerSubmitted &&
+            <button onClick={() => this.submitAnswer()}> Submit</button>
+          }
+          {currentQuestion && ac.answerSubmitted &&
+          <div>            
             <h3>The Correct Answer Is:</h3>
             <h3>{currentQuestion.correctAnswer }</h3>
             Mark the answer correct or incorrect:<br/>
-            <button onClick={() => this.markAnswer(currentQuestion, 'Correct')}>Correct</button>
-            <button onClick={() => this.markAnswer(currentQuestion, 'Close')}>Close</button>
-            <button onClick={() => this.markAnswer(currentQuestion, 'Kinda')}>Kinda</button>
-            <button onClick={() => this.markAnswer(currentQuestion, 'Incorrect')}>Incorrect</button>
+
+            <button 
+              class={ac.markedAs == 'Incorrect' ? 'selected' : ''} 
+              onClick={() => this.markAnswer('Incorrect')}>
+              Incorrect
+            </button>
+            <button 
+              class={ac.markedAs == 'Kinda' ? 'selected' : ''} 
+              onClick={() => this.markAnswer('Kinda')}>
+              Kinda
+            </button>
+            <button 
+              class={ac.markedAs == 'Almost' ? 'selected' : ''} 
+              onClick={() => this.markAnswer('Almost')}>
+              Almost
+            </button>
+            <button 
+              class={ac.markedAs == 'Correct' ? 'selected' : ''} 
+              onClick={() => this.markAnswer('Correct')}>
+              Correct
+            </button>
           </div>
           }
-          {currentQuestion && !!currentQuestion.markedAs &&
-            <button onClick={() => this.questionNumber < this.activeQuiz.questions.length ? this.nextQuestion() : this.quizComplete()} >
-              { this.questionNumber < this.activeQuiz.questions.length ? 'Next' : 'Complete' }
+          {currentQuestion && !!ac.markedAs &&
+            <button onClick={() => ac.questionNumber < ac.questions.length ? this.nextQuestion() : this.quizComplete()} >
+              { ac.questionNumber < ac.questions.length ? 'Next' : 'Complete' }
             </button>
           }
         </div>
     ])
   }
+
 }
