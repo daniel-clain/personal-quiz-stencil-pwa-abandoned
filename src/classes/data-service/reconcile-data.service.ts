@@ -4,7 +4,7 @@ import CollectionNames from "../../types/collection-names";
 import IQuestion from "../../interfaces/question.interface";
 
 export default class ReconcileDataService{
-  reconcileData(localDataItems: DataItem[], remoteDataItems: DataItem[], collectionName: CollectionNames): UpdatesObject{
+  reconcileData(localDataItems: DataItem[], remoteDataItems: DataItem[], collectionName?: CollectionNames): UpdatesObject{
 
     const resolvedConflictedItems: UpdatesObject = {
       updatesForLocal: [],
@@ -42,7 +42,7 @@ export default class ReconcileDataService{
                 }
               }
             }
-            if(collectionName == 'Tags'){
+            else{
               if(localData.dateLastUpdated > remoteData.dateLastUpdated){
                 resolvedConflictedItems.updatesForRemote.push(localData)
               }
@@ -56,13 +56,13 @@ export default class ReconcileDataService{
     )
 
     
-    const dataThatLocalHasThatRemoteDoesnt = localDataItems.filter(
+    const dataThatLocalHasThatRemoteDoesnt: DataItem[] = localDataItems.filter(
       (localData: DataItem) => !remoteDataItems.some((remoteData: DataItem) => remoteData.id == localData.id)
     )
     console.log(dataThatLocalHasThatRemoteDoesnt);
 
     
-    const dataThatRemoteHasThatLocalDoesnt = remoteDataItems.filter(
+    const dataThatRemoteHasThatLocalDoesnt: DataItem[] = remoteDataItems.filter(
         (remoteData: DataItem) => !localDataItems.some((localData: DataItem) => localData.id == remoteData.id)
     )
     console.log(dataThatRemoteHasThatLocalDoesnt);
@@ -71,8 +71,14 @@ export default class ReconcileDataService{
 
 
     return {
-      updatesForLocal: dataThatRemoteHasThatLocalDoesnt,
-      updatesForRemote: dataThatLocalHasThatRemoteDoesnt
+      updatesForLocal: [
+        ...dataThatRemoteHasThatLocalDoesnt,
+        ...resolvedConflictedItems.updatesForLocal
+      ],
+      updatesForRemote: [
+        ...dataThatLocalHasThatRemoteDoesnt,
+        ...resolvedConflictedItems.updatesForRemote
+      ]
     }
   }
 

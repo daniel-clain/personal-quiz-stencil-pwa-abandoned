@@ -38,7 +38,7 @@ let mockReturnedQuestions: IQuestion[]
 
 class MockQuestionService extends QuestionService{
   getQuestionsByTag(_tags?: ITag[]): Promise<IQuestion[]>{
-    return jest.fn().mockReturnValue(mockReturnedQuestions)()
+    return jest.fn().mockResolvedValue(mockReturnedQuestions)()
   }
 }
 
@@ -104,6 +104,7 @@ describe ('generateQuiz()', () => {
               const quizGeneratorInstance = new QuizGenertator(mockQuestionService)
               const returnedQuiz: IQuiz = await quizGeneratorInstance.generateQuiz()
               expect(returnedQuiz.questions.some((question: IQuestion) => question.id == 'test question')).toBe(true)
+
             })
 
           })          

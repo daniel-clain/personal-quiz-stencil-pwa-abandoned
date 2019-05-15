@@ -1,13 +1,17 @@
-import DataService from "../data-service/data.service";
+
 import IQuestion from "../../interfaces/question.interface";
 import ITag from "../../interfaces/tag.interface";
 import { CorrectnessRatings } from "../../types/correctness-rating";
 import { Observable } from "rxjs";
+import DataService from '../data-service/data.service';
 
 export class QuestionService {
   questions$: Observable<IQuestion[]>;
+  private dataService: DataService
 
-  constructor(private dataService: DataService) {}
+  constructor(dataService: DataService) {
+    this.dataService = dataService
+  }
 
 
   getQuestionsByTag(tags?: ITag[]): Promise<IQuestion[]> {

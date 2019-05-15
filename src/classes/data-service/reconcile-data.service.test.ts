@@ -103,7 +103,7 @@ describe ('reconcileData()', () => {
       }
       const localData: DataItem[] = [localDataItem]
       const remoteData: DataItem[] = [remoteDataItem]
-      const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData)
+      const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData, 'Questions')
       it('remote data item should be update local data', () => {
         expect(response.updatesForRemote.length).toBe(1)
         expect(response.updatesForRemote[0]).toBe(localDataItem)

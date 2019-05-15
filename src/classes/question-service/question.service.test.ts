@@ -1,12 +1,13 @@
 
 import { QuestionService } from "./question.service";
 import IQuestion from "../../interfaces/question.interface";
-import DataService from "../data-service/data.service";
+
+import IInMemoryData from '../../interfaces/in-memory-data.interface';
+import DataService from '../data-service/data.service';
 
 class DataServiceMock extends DataService{
-  connected
-  getQuestions(): Promise<IQuestion[]>{
-    const questions: IQuestion[] =  [
+  inMemory: IInMemoryData  = {
+    'Questions': [
       {
         id: null,
         value: 'mock question',
@@ -16,8 +17,8 @@ class DataServiceMock extends DataService{
         dateLastUpdated: null,
         tags: []
       }
-    ]
-    return Promise.resolve(questions)
+    ],
+    'Tags': []
   }
 }
 

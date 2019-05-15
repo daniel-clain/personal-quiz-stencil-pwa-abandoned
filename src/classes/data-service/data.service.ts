@@ -12,6 +12,9 @@ import IQuestion from '../../interfaces/question.interface';
 import ReconcileDataService from './reconcile-data.service';
 import UpdatesObject from '../../interfaces/updates-object.interface';
 
+import IInMemoryData from '../../interfaces/in-memory-data.interface';
+
+
 export default class DataService{
 
   connectionSubject: Subject<boolean> = new Subject()
@@ -19,7 +22,7 @@ export default class DataService{
   private questions: IQuestion[]
   private tags: ITag[]
 
-  inMemory = {
+  inMemory: IInMemoryData = {
     'Questions': this.questions,
     'Tags': this.tags
   }
