@@ -26,14 +26,26 @@ export namespace Components {
     'onViewSelected'?: (event: CustomEvent<Views>) => void;
   }
 
-  interface QuestionsComponent {}
-  interface QuestionsComponentAttributes extends StencilHTMLAttributes {}
+  interface QuestionsComponent {
+    'dataService': DataService;
+  }
+  interface QuestionsComponentAttributes extends StencilHTMLAttributes {
+    'dataService'?: DataService;
+  }
 
-  interface QuizComponent {}
-  interface QuizComponentAttributes extends StencilHTMLAttributes {}
+  interface QuizComponent {
+    'dataService': DataService;
+  }
+  interface QuizComponentAttributes extends StencilHTMLAttributes {
+    'dataService'?: DataService;
+  }
 
-  interface TagsComponent {}
-  interface TagsComponentAttributes extends StencilHTMLAttributes {}
+  interface TagsComponent {
+    'dataService': DataService;
+  }
+  interface TagsComponentAttributes extends StencilHTMLAttributes {
+    'dataService'?: DataService;
+  }
 }
 
 declare global {

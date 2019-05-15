@@ -1,12 +1,11 @@
 import CollectionNames from "../../types/collection-names";
-import ClientData from './../../interfaces/client-data.interface'
+import ClientData from '../../interfaces/client-data.interface'
 import DataItem from "../../interfaces/data-item.interface";
 import CrudActions from "../../types/crud-actions";
 
 export default class LocalDbService{
 
   localDatabase: IDBDatabase
-  static singletonInstance: LocalDbService
   
   async getDataById(id: string, collectionName: CollectionNames): Promise<any>{
     const localDatabase: IDBDatabase = await this.getLocalDatabase()
@@ -46,6 +45,25 @@ export default class LocalDbService{
     }
     this.updateItem(updatedClientData, 'Client Data', 'update')
 
+  }
+
+  async updateItemWithNewId(data: DataItem, collectionName: CollectionNames, oldId: string): Promise<any>{
+    if(!data.id) debugger
+    const localDatabase: IDBDatabase = await this.getLocalDatabase()
+
+    const objectStore: IDBObjectStore = localDatabase
+      .transaction([collectionName], 'readwrite')
+      .objectStore(collectionName)
+
+    let request: IDBRequest = objectStore.put(data, oldId)
+
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        console.log(`update for ${collectionName} ${data.value}`, data);
+        resolve()
+      }
+      request.onerror = error => reject(error)
+    });
   }
 
 
@@ -140,11 +158,5 @@ export default class LocalDbService{
     }
   }
 
-  public static getSingletonInstance(): LocalDbService {
-    if(!this.singletonInstance){
-      this.singletonInstance = new LocalDbService()
-    }
-    return this.singletonInstance
-  }
 
 }

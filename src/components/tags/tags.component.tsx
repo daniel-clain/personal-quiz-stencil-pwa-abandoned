@@ -1,16 +1,15 @@
-import { Component, State } from '@stencil/core';
+import { Component, State, Prop } from '@stencil/core';
 import ITag from '../../interfaces/tag.interface';
 import DataService from '../../classes/data-service/data.service';
 
 @Component({ tag: 'tags-component' })
 export class TagsComponent {
+  @Prop() dataService: DataService
   @State() tags: ITag[] = []
   @State() selectedTag: ITag
   @State() newTag: ITag
-  dataService: DataService
 
   componentWillLoad(){
-    this.dataService = DataService.getSingletonInstance()
     this.dataService.tags$.subscribe((tags: ITag[]) => this.tags = [...tags])
     this.resetNewTag()
   }

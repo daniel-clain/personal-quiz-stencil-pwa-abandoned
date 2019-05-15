@@ -5,12 +5,9 @@ import { CorrectnessRatings } from "../../types/correctness-rating";
 import { Observable } from "rxjs";
 
 export class QuestionService {
-  private static singletonInstance: QuestionService;
   questions$: Observable<IQuestion[]>;
 
-  constructor(private dataService: DataService) {
-    QuestionService.singletonInstance = this
-  }
+  constructor(private dataService: DataService) {}
 
 
   getQuestionsByTag(tags?: ITag[]): Promise<IQuestion[]> {
@@ -23,14 +20,6 @@ export class QuestionService {
     })
   }
 
-
-  public static getSingletonInstance(): QuestionService {
-    if (!this.singletonInstance) {
-      const dataService: DataService = DataService.getSingletonInstance();
-      new QuestionService(dataService);
-    }
-    return this.singletonInstance;
-  }
 
   updateCorrectnessRating(question: IQuestion, correctnessRating: CorrectnessRatings) {
     let qcr = question.correctnessRating || 2;

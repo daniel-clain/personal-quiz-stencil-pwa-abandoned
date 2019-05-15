@@ -1,23 +1,21 @@
-import 'firebase/firestore'
+
 import { User } from 'firebase';
 import CollectionNames from '../../types/collection-names'
 import { AuthService } from '../auth-service/auth.service';
 import { Subject, Observable, Subscriber, Subscription } from 'rxjs';
 import DataItem from '../../interfaces/data-item.interface';
 import ClientData from './../../interfaces/client-data.interface'
-import LocalDbService from '../local-db/local-db.service';
-import FirestoreDbService from '../firestore-db/firestore-db.service';
+import LocalDbService from '../local-db-service/local-db.service';
+import FirestoreDbService from '../firestore-db-service/firestore-db.service';
 import ITag from '../../interfaces/tag.interface';
 import IQuestion from '../../interfaces/question.interface';
+import ReconcileDataService from './reconcile-data.service';
+import UpdatesObject from '../../interfaces/updates-object.interface';
 
 export default class DataService{
 
-  private static singletonInstance: DataService
   connectionSubject: Subject<boolean> = new Subject()
   connected: boolean
-  private authService: AuthService
-  private localDbService: LocalDbService
-  private firestoreDbService: FirestoreDbService
   private questions: IQuestion[]
   private tags: ITag[]
 
@@ -35,8 +33,12 @@ export default class DataService{
   questionUpdates$: Subject<IQuestion[]> = new Subject();
 
 
-  constructor(){
-    DataService.singletonInstance = this
+  constructor(     
+   private firestoreDbService: FirestoreDbService,
+   private localDbService: LocalDbService,
+   private reconcileDataService: ReconcileDataService,
+   private authService: AuthService
+  ){
     this.setup()
   }
 
@@ -59,10 +61,6 @@ export default class DataService{
         subscriber.next(updatedTags);
       });
     })
-
-    this.localDbService = LocalDbService.getSingletonInstance()
-    this.firestoreDbService = FirestoreDbService.getSingletonInstance()
-    this.authService = AuthService.getSingletonInstance()
 
     this.localDbService.getData('Questions')
     .then((questions: IQuestion[]) => {
@@ -98,12 +96,11 @@ export default class DataService{
 
     if(dateClientLastConnectedToFirestore){
       this.reconcileFirestoreAndLocalData(dateClientLastConnectedToFirestore)
-      this.localDbService.updateDateClientLastConnectedToFirestore()
     }
     else{
-      this.updateLocalDbWithFirebaseData()
-      this.localDbService.updateDateClientLastConnectedToFirestore()
+      this.updateLocalDbWithFirestoreData()
     }
+    this.localDbService.updateDateClientLastConnectedToFirestore()
     let dansQuestions = [
       {
          "id":"06epqoGXDuravbhXjZ9L",
@@ -2927,20 +2924,29 @@ export default class DataService{
 
   private async reconcileFirestoreAndLocalData(dateClientLastConnectedToFirestore: Date){
 
-      const firestoreQuestions: any = await this.firestoreDbService.getNewData('Questions', dateClientLastConnectedToFirestore)
+      const firestoreQuestions: IQuestion[] = await this.firestoreDbService.getNewData('Questions', dateClientLastConnectedToFirestore)
       console.log('firestoreQuestions :', firestoreQuestions);
 
 
 
-      const localQuestions: any = await this.localDbService.getNewData('Questions', dateClientLastConnectedToFirestore)
+      const localQuestions: IQuestion[] = await this.localDbService.getNewData('Questions', dateClientLastConnectedToFirestore)
       console.log('localQuestions :', localQuestions);
 
       
-      const firestoreTags: any = await this.firestoreDbService.getNewData('Tags', dateClientLastConnectedToFirestore)
+      const firestoreTags: ITag[] = await this.firestoreDbService.getNewData('Tags', dateClientLastConnectedToFirestore)
       console.log('firestoreTags :', firestoreTags);
       
-      const localTags: any = await this.localDbService.getNewData('Tags', dateClientLastConnectedToFirestore)
+      const localTags: ITag[] = await this.localDbService.getNewData('Tags', dateClientLastConnectedToFirestore)
       console.log('localTags :', localTags);
+
+      const questionUpdates: UpdatesObject = this.reconcileDataService.reconcileData(localQuestions, firestoreQuestions)
+      const tagUpdates: UpdatesObject = this.reconcileDataService.reconcileData(localQuestions, firestoreQuestions)
+      console.log(questionUpdates);
+      tagUpdates.updatesForRemote.forEach((tag: ITag) => {
+         this.firestoreDbService.addItem(tag, 'Tags')
+         .then((tagId: string) => this.localDbService.updateItemWithNewId(tag, 'Tags', tagId))
+      })
+
 
       /* localData = getLocalData where localData.dateLastUpdated > localDb.dateLastConnectedToFirestore
 
@@ -2951,7 +2957,7 @@ export default class DataService{
   }
 
 
-  private async updateLocalDbWithFirebaseData(){
+  private async updateLocalDbWithFirestoreData(){
     
     const firestoreQuestions: any = await this.firestoreDbService.getAllData('Questions')
     this.localDbService.addDataToCollection(firestoreQuestions, 'Questions')
@@ -3039,15 +3045,6 @@ export default class DataService{
       }
       
     })      
-  }
-
-
-
-  public static getSingletonInstance(): DataService {
-    if(!this.singletonInstance){
-      new DataService()
-    }
-    return this.singletonInstance
   }
 
 

@@ -1,4 +1,4 @@
-import { Component, State } from '@stencil/core';
+import { Component, State, Prop } from '@stencil/core';
 import { QuestionViews } from '../../types/question-views';
 import IQuestion from '../../interfaces/question.interface';
 import ITag from '../../interfaces/tag.interface';
@@ -7,19 +7,15 @@ import DataService from '../../classes/data-service/data.service';
 
 @Component({tag: 'questions-component'})
 export class QuestionsComponent {
-
+  @Prop() dataService: DataService
   @State() questionView: QuestionViews = 'Questions List'
   @State() questions: IQuestion[]
   @State() tags: ITag[]
   @State() newQuestion: IQuestion 
   @State() selectedQuestion: IQuestion
-  questionService: QuestionService
-  dataService: DataService
 
   
   componentWillLoad(){
-    this.questionService = QuestionService.getSingletonInstance()
-    this.dataService = DataService.getSingletonInstance()
 
     this.dataService.tags$.subscribe((tags: ITag[]) => {
       console.log('tag service subscribe tags', tags);
@@ -108,31 +104,33 @@ export class QuestionsComponent {
     return (
       this.tags &&
       <div class='question-management'>
-        <h3>Add Question</h3>        
-        <div class="field">
-          <span class="field__name">Question: </span>
-          <input class="field__input" value={this.newQuestion.value} onInput={event => this.questionValueInputHandler(event)} />
-        </div>
-        <div class="field">
-          <span class="field__name">Correct Answer: </span>
-          <textarea class="field__text-area field__input" value={this.newQuestion.correctAnswer} onInput={event => this.questionCorrectAnswerInputHandler(event)}></textarea>
-        </div>
-        <div class="field">
-          <span class="field__name">Tags: </span>
-          <div class="field__checkboxes">
-            {this.tags.map((tag: ITag) => (              
-              <label>
-                <input 
-                  type="checkbox" 
-                  checked={this.newQuestion.tags.some((questionTag: ITag) => questionTag.id == tag.id)}
-                  onClick={() => this.toggleQuestionTag(tag, 'new')} 
-                /> 
-                {tag.value}
-              </label>
-            ))}
+      <div class="add-question">
+          <h3>Add Question</h3>        
+          <div class="field add-question__value">
+            <span class="field__name">Question: </span>
+            <input class="field__input" value={this.newQuestion.value} onInput={event => this.questionValueInputHandler(event)} />
           </div>
+          <div class="field add-question__answer">
+            <span class="field__name">Correct Answer: </span>
+            <textarea class="field__text-area field__input" value={this.newQuestion.correctAnswer} onInput={event => this.questionCorrectAnswerInputHandler(event)}></textarea>
+          </div>
+          <div class="field add-question__tags">
+            <span class="field__name">Tags: </span>
+            <div class="field__checkboxes">
+              {this.tags.map((tag: ITag) => (              
+                <label>
+                  <input 
+                    type="checkbox" 
+                    checked={this.newQuestion.tags.some((questionTag: ITag) => questionTag.id == tag.id)}
+                    onClick={() => this.toggleQuestionTag(tag, 'new')} 
+                  /> 
+                  {tag.value}
+                </label>
+              ))}
+            </div>
+          </div>
+          <button onClick={() => this.addQuestion()}>Submit</button>
         </div>
-        <button onClick={() => this.addQuestion()}>Submit</button>
 
         <hr />
         <button 
@@ -147,7 +145,7 @@ export class QuestionsComponent {
         </button>
 
         {this.questionView == 'Questions List' && this.questions && 
-          <div class="list">
+          <div class="questions-list">
             <h2>Questions List</h2>
             {this.questions.map((question: IQuestion) => ([
             (!this.selectedQuestion || this.selectedQuestion.id != question.id) &&

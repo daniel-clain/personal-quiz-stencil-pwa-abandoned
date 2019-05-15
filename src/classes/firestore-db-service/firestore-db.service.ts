@@ -8,8 +8,6 @@ import { AuthService } from "../auth-service/auth.service";
 
 export default class FirestoreDbService{
 
-  
-  static singletonInstance: FirestoreDbService
   private firestore: firestore.Firestore
   private authService: AuthService
   private _user: User
@@ -31,8 +29,6 @@ export default class FirestoreDbService{
       }
     )
     this.firestore = firebase.firestore()
-
-    this.authService = AuthService.getSingletonInstance()
 
     this.authService.user$.subscribe(
       (user: User) => this._user = user
@@ -113,13 +109,5 @@ export default class FirestoreDbService{
     })
   }
 
-
-
-  public static getSingletonInstance(): FirestoreDbService {
-    if(!this.singletonInstance){
-      this.singletonInstance = new FirestoreDbService()
-    }
-    return this.singletonInstance
-  }
   
 }

@@ -21,7 +21,7 @@ class DataServiceMock extends DataService{
   }
 }
 
-const mockDataServiceInstance: DataServiceMock =  new DataServiceMock()
+const mockDataServiceInstance: DataServiceMock =  new DataServiceMock(null, null, null, null)
 
 describe('getQuestionsByTag()', () => {
   it('should return stub questions from mock data service and not real data service', async () => {

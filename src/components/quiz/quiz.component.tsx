@@ -1,4 +1,4 @@
-import { Component, State } from '@stencil/core';
+import { Component, State, Prop } from '@stencil/core';
 import { QuestionService } from "../../classes/question-service/question.service";
 import ITag from '../../interfaces/tag.interface';
 import IQuiz from '../../interfaces/quiz.interface';
@@ -9,6 +9,7 @@ import DataService from '../../classes/data-service/data.service';
 
 @Component({ tag: 'quiz-component' })
 export class QuizComponent {
+  @Prop() dataService: DataService
   @State() activeQuiz: IQuiz
   private questionsInQuiz: number
   private questionService: QuestionService
@@ -19,10 +20,9 @@ export class QuizComponent {
   private quizGenerator: QuizGenertator
 
   componentWillLoad() {
-    this.questionService = QuestionService.getSingletonInstance()
-    const dataService = DataService.getSingletonInstance()
-    dataService.tags$.subscribe((tags: ITag[]) => this.tags = tags)
-    dataService.questions$.subscribe((questions: IQuestion[]) => this.questions = questions)
+    this.questionService = new QuestionService(this.dataService)
+    this.dataService.tags$.subscribe((tags: ITag[]) => this.tags = tags)
+    this.dataService.questions$.subscribe((questions: IQuestion[]) => this.questions = questions)
     this.quizGenerator = new QuizGenertator(this.questionService)
     this.questionsInQuiz = this.quizGenerator.questionsInQuiz
   }

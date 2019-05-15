@@ -9,7 +9,7 @@ import random from "../../helper-functions/random";
 
 export class QuizGenertator{
 
-  questionsInQuiz = 10
+  readonly questionsInQuiz = 10
   
   constructor(private questionService: QuestionService){}
 
@@ -25,7 +25,7 @@ export class QuizGenertator{
           )
         }
       )
-    });
+    })
   }
   
 
@@ -44,8 +44,7 @@ export class QuizGenertator{
       return question as IQuestion
     })
     resolve(quizQuestions)
-    });
-    
+    });    
   }
 
   // rating is based on question correctness and how long since last asked relative to other questions
@@ -73,7 +72,6 @@ export class QuizGenertator{
     const lastAskedDaysRange = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
     return {mostRecentDate, lastAskedDaysRange}
   }
-
 
 
   // the longer its been since a question has been asked, the lower its rating should be

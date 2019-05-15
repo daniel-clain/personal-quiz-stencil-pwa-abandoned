@@ -20,12 +20,12 @@ export class NavComponent {
   render() {
     return (
       <nav>
-        <button onClick={() => this.viewSelected.emit('Start Quiz')}>Start Quiz</button>
-        <button onClick={() => this.viewSelected.emit('Manage Questions')}>Add Question</button>
+        <button id='start-quiz' onClick={() => this.viewSelected.emit('Start Quiz')}>Start Quiz</button>
+        <button id='add-question' onClick={() => this.viewSelected.emit('Manage Questions')}>Add Question</button>
         {!this.connected && 
-          <button onClick={() => this.authService.login()}>Login</button>}
+          <button id='login' onClick={() => this.authService.login()}>Login</button>}
         {this.connected && 
-          <button onClick={() => this.authService.logout()}>Logout</button>}
+          <button id='logout' onClick={() => this.authService.logout()}>Logout</button>}
       </nav>
     )
 

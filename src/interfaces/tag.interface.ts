@@ -1,5 +1,5 @@
 import DataItem from './data-item.interface'
-export default class ITag implements DataItem{
+export default interface ITag extends DataItem{
   id: string
   dateLastUpdated: Date;
   value: string
