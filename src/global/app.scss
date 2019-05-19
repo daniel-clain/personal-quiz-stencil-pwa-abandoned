@@ -20,6 +20,9 @@ body {
   min-height: 700px;
 }
 
+hr {
+  margin: 1rem 0;
+}
 
 input,
 textarea,
@@ -41,9 +44,10 @@ select {
 .field {
   margin-bottom: 1rem;
   &__name {
-    line-height: 1.5rem;
     font-family: monospace;
     font-size: 1.2rem;
+    margin-bottom: .5rem;
+    display: inline-block;
   }
   &__input,
   &__text-area {

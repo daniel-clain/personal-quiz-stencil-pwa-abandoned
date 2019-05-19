@@ -1,161 +1,148 @@
-import CollectionNames from "../../types/collection-names";
-import ClientData from '../../interfaces/client-data.interface'
-import DataItem from "../../interfaces/data-item.interface";
-import CrudActions from "../../types/crud-actions";
+import CollectionNames from "../../global/types/collection-names";
+import IDataItem from "../../global/interfaces/data-item.interface";
+import ILocalDbService from "../../global/interfaces/local-db-service.interface";
+import { Subject } from "rxjs";
 
-export default class LocalDbService{
+export default class LocalDbService implements ILocalDbService{
 
   localDatabase: IDBDatabase
-  
-  async getDataById(id: string, collectionName: CollectionNames): Promise<any>{
-    const localDatabase: IDBDatabase = await this.getLocalDatabase()
+  dataUpdateSubject: Subject<CollectionNames> = new Subject()
 
-    const request: IDBRequest = localDatabase
-      .transaction([collectionName], 'readwrite')
-      .objectStore(collectionName)
-      .get(id)
 
-    return new Promise((resolve, reject) => {
-      request.onsuccess = ((event: Event) => {
-        const request: any = event.target
-        const result: any = request.result
-        resolve(result)
-      })
-      request.onerror = error => reject(error)
+  setup(): Promise<void>{
+    return new Promise(resolve => {
+      
+      const request: IDBOpenDBRequest = indexedDB.open('Personal Quiz Data')
+      request.onupgradeneeded = () => {
+        const localDb = request.result
+        const questionsObjectStore: IDBObjectStore = localDb.createObjectStore('Questions', { keyPath: 'id' })
+        questionsObjectStore.createIndex('id', 'id')
+        questionsObjectStore.createIndex('value', 'value')
+        questionsObjectStore.createIndex('correctAnswer', 'correctAnswer')
+        questionsObjectStore.createIndex('correctnessRating', 'correctnessRating')
+        questionsObjectStore.createIndex('dateLastAsked', 'dateLastAsked')
+        questionsObjectStore.createIndex('dateLastUpdated', 'dateLastUpdated')
+        questionsObjectStore.createIndex('tags', 'tags')
+        const tagsObjectStore: IDBObjectStore = localDb.createObjectStore('Tags', { keyPath: 'id' })
+        tagsObjectStore.createIndex('id', 'id')
+        tagsObjectStore.createIndex('value', 'value')
+        tagsObjectStore.createIndex('dateLastUpdated', 'dateLastUpdated')
+        const dateLastConnectedObjectStore: IDBObjectStore = localDb.createObjectStore('Date Last Connected To Firestore', { keyPath: 'id'});
+        dateLastConnectedObjectStore.createIndex('dateLastConnectedToFirestore', 'dateLastConnectedToFirestore')
+        this.setInitialDateLastConnectedToFirestoreField(request)
+      }
+      request.onsuccess = () => {
+        this.localDatabase = request.result
+        resolve()
+      }
     });
-  }
+  }    
 
-  async getData(collectionName: CollectionNames): Promise<any[]>{
-    const localDatabase: IDBDatabase = await this.getLocalDatabase()
-    return new Promise((resolve) => {
-      localDatabase
-      .transaction([collectionName], 'readwrite')
-      .objectStore(collectionName)
-      .getAll()
-      .onsuccess = ((event: any) => resolve(event.target.result))
+  setInitialDateLastConnectedToFirestoreField(openDbRequest: IDBOpenDBRequest){
+    const emptyDateObj = {id: 'default', dateLastConnectedToFirestore: null}
+
+    const request = openDbRequest.transaction
+    .objectStore('Date Last Connected To Firestore')
+    .add(emptyDateObj)
+
+    request.onsuccess = (() => {
+      console.log('empty dateLastConnectedToFirestoreField initialized')
+    })
+  } 
+
+  
+  getDateClientLastConnectedToFirestore(): Promise<Date>{
+    const objectStore: IDBObjectStore = this.getObjectStore('Date Last Connected To Firestore')
+    const request: IDBRequest = objectStore.get('default')
+    return new Promise((resolve, reject) => {      
+      request.onsuccess = ((event: any) => resolve(event.target.result.dateLastConnectedToFirestore))
+      request.onerror = error => reject(error)
+    }); 
+  } 
+
+  getData<T>(collectionName: CollectionNames): Promise<T>{
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const request: IDBRequest = objectStore.getAll()
+    return new Promise((resolve, reject) => {
+      request.onsuccess = ((event: any) => resolve(event.target.result))
+      request.onerror = error => reject(error)
     }); 
   }
 
+  async updateDateClientLastConnectedToFirestore(){
+    const newDateObj = {id: 'default', dateLastConnectedToFirestore: new Date()}
+    const objectStore: IDBObjectStore = this.getObjectStore('Date Last Connected To Firestore')
+    const request: IDBRequest = objectStore.put(newDateObj)
+    return this.requestResolver<void>(request)
+  } 
 
-  updateDateClientLastConnectedToFirestore(){
-    const updatedClientData: ClientData = {
-      id: 'client',
-      value: 'last connected to firebase',
-      dateLastUpdated: new Date(),
+  getNewData<T extends IDataItem>(collectionName: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<T[]>{
+    if(dateClientLastConnectedToFirestore == null){
+      return Promise.resolve([])
     }
-    this.updateItem(updatedClientData, 'Client Data', 'update')
-
-  }
-
-  async updateItemWithNewId(data: DataItem, collectionName: CollectionNames, oldId: string): Promise<any>{
-    if(!data.id) debugger
-    const localDatabase: IDBDatabase = await this.getLocalDatabase()
-
-    const objectStore: IDBObjectStore = localDatabase
-      .transaction([collectionName], 'readwrite')
-      .objectStore(collectionName)
-
-    let request: IDBRequest = objectStore.put(data, oldId)
-
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        console.log(`update for ${collectionName} ${data.value}`, data);
-        resolve()
-      }
-      request.onerror = error => reject(error)
-    });
-  }
-
-
-  async updateItem(data: DataItem, collectionName: CollectionNames, action: CrudActions): Promise<any>{
-    if(!data.id) debugger
-    const localDatabase: IDBDatabase = await this.getLocalDatabase()
-
-    const objectStore: IDBObjectStore = localDatabase
-      .transaction([collectionName], 'readwrite')
-      .objectStore(collectionName)
-
-    let request: IDBRequest
-    switch(action){
-      case 'add' : request = objectStore.add(data); break;
-      case 'update' : request = objectStore.put(data); break;
-      case 'delete' : request = objectStore.delete(data.id); break;
-    }
-
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        console.log(`${action} for ${collectionName} ${data.value}`, data);
-        resolve()
-      }
-      request.onerror = error => reject(error)
-    });
-  }
-
-  
-  getLocalDatabase(): Promise<IDBDatabase>{
-    if(this.localDatabase){
-      return Promise.resolve(this.localDatabase)
-    }
-    else {
-      return new Promise((resolve) => {
-        const request: IDBOpenDBRequest = indexedDB.open('Personal Quiz Data')
-        request.onupgradeneeded = () => {
-          request.result.createObjectStore('Questions', { keyPath: 'id' });
-          request.result.createObjectStore('Tags', { keyPath: 'id' });
-          request.result.createObjectStore('Client Data', { keyPath: 'id' });
-
-          const emptyClientData: ClientData = {
-            id: 'client',
-            value: 'last connected to firebase',
-            dateLastUpdated: null
-          }
-
-          const request2 = request.transaction
-          .objectStore('Client Data')
-          .add(emptyClientData)
-
-          request2.onsuccess = (() => {
-            console.log('empty client data obj initialized')
-          })
-
-        }
-        request.onsuccess = () => {
-          this.localDatabase = request.result
-          resolve(this.localDatabase)
-        }
-      });
-    }    
-  }
-  
-
-  async getNewData(collection: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<any[]>{
-    const localDatabase: IDBDatabase = await this.getLocalDatabase()
-
-    const tx: IDBTransaction = localDatabase.transaction([collection], 'readwrite')
-    const objectStore: IDBObjectStore = tx.objectStore(collection)
-    const request: IDBRequest = objectStore.getAll()
-
-    return new Promise(resolve => {      
+    const keyRangeValue = IDBKeyRange.lowerBound(dateClientLastConnectedToFirestore, true);
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const dateLastUpdatedIndex = objectStore.index('dateLastUpdated');
+    const request: IDBRequest = dateLastUpdatedIndex.openCursor(keyRangeValue)
+    return new Promise((resolve, reject) => {      
+      const returnDataArray: T[] = []
       request.onsuccess = (event: any) => {
-        // fix this to only get items after last connected date 
-        dateClientLastConnectedToFirestore
-        return resolve(event.target.result)
-      }      
-    })
+        const cursor: IDBCursorWithValue = event.target.result;
+        if(cursor) {
+          const dataItem: T = cursor.value
+          returnDataArray.push(dataItem)
+          cursor.continue();
+        }
+        else{
+          resolve(returnDataArray)
+        }
+      }
+      request.onerror = error => reject(error)
+    });
   }
 
-  async addDataToCollection(dataItems: DataItem[], collection: CollectionNames){
-    const localDatabase: IDBDatabase = await this.getLocalDatabase()
+  
 
-    const tx: IDBTransaction = localDatabase.transaction([collection], 'readwrite')
+  private getObjectStore(collectionName: CollectionNames): IDBObjectStore{
+    return this.localDatabase
+      .transaction([collectionName], 'readwrite')
+      .objectStore(collectionName)
+  }
 
-    dataItems.forEach((dataItem: DataItem) => {
-      tx.objectStore(collection).add(dataItem)
-    })
+  
+  getDataById<T extends IDataItem>(id: string, collectionName: CollectionNames): Promise<T> {
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const request: IDBRequest = objectStore.get(id)
+    return this.requestResolver<T>(request)
+  }
 
-    tx.oncomplete = () => {
-      return Promise.resolve()
-    }
+  addItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const request: IDBRequest = objectStore.add(data)
+    return this.requestResolver<void>(request)
+    .then(() => this.dataUpdateSubject.next(collectionName))
+  }
+
+  updateItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const request: IDBRequest = objectStore.put(data)
+    return this.requestResolver<void>(request)
+    .then(() => this.dataUpdateSubject.next(collectionName))
+  }
+
+  deleteItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const request: IDBRequest = objectStore.delete(data.id)
+    return this.requestResolver<void>(request)
+    .then(() => this.dataUpdateSubject.next(collectionName))
+  }
+
+  
+  private requestResolver<T>(request: IDBRequest): Promise<T>{
+    return new Promise((resolve, reject) => {
+      request.onsuccess = (event: any) => resolve(event.target.result)
+      request.onerror = error => reject(error)
+    });
   }
 
 

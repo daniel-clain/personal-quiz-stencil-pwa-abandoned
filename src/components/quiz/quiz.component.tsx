@@ -1,11 +1,11 @@
 import { Component, State, Prop } from '@stencil/core';
 import { QuestionService } from "../../classes/question-service/question.service";
-import ITag from '../../interfaces/tag.interface';
-import IQuiz from '../../interfaces/quiz.interface';
-import { CorrectnessRatings } from '../../types/correctness-rating';
-import IQuestion from '../../interfaces/question.interface';
+import ITag from '../../global/interfaces/tag.interface';
+import IQuiz from '../../global/interfaces/quiz.interface';
+import { CorrectnessRatings } from '../../global/types/correctness-rating';
+import IQuestion from '../../global/interfaces/question.interface';
 import { QuizGenertator } from '../../classes/quiz-generator/quiz-generator';
-import DataService from '../../classes/data-service/data.service';
+import { DataService } from '../../classes/data-service/data.service';
 
 @Component({ tag: 'quiz-component' })
 export class QuizComponent {
@@ -83,6 +83,7 @@ export class QuizComponent {
     let currentQuestion: IQuestion =  ac ? ac.questions[ac.questionNumber - 1] : null
 
     return ([
+      <h2>Personal Quiz</h2>,
       this.notEnoughQuestions &&
       <div id='notEnoughQuestionsError'>
         <p>
@@ -108,9 +109,9 @@ export class QuizComponent {
         <button onClick={() => this.startQuiz()}>Start Quiz</button>
       </div>,
 
-ac &&
+      ac &&
         <div id="quiz">
-          <h3>Question {ac.questionNumber } of { this.questionsInQuiz }</h3>
+          <h2>Question {ac.questionNumber } of { this.questionsInQuiz }</h2>
           <div class="quiz-question">{ currentQuestion.value }</div>
           <div class="field">
             <span class="field__name">Your Answer: </span><br />

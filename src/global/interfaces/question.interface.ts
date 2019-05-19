@@ -1,7 +1,7 @@
 import ITag from './tag.interface';
-import DataItem from './data-item.interface'
+import IDataItem from './data-item.interface'
 
-export default interface IQuestion extends DataItem{
+export default interface IQuestion extends IDataItem{
   id: string
   value: string
   correctAnswer: string

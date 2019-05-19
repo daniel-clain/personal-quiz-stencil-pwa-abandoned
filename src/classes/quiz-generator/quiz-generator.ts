@@ -1,11 +1,11 @@
-import IQuiz from "../../interfaces/quiz.interface";
+import IQuiz from "../../global/interfaces/quiz.interface";
 import { QuestionService } from "../question-service/question.service";
-import IQuestion from "../../interfaces/question.interface";
-import ITag from "../../interfaces/tag.interface";
-import IQuestionWithRating from "../../interfaces/questionWithRating";
-import IQuestionWithRandomValue from "../../interfaces/questionWithRandomValue";
-import shuffle from "../../helper-functions/shuffle";
-import random from "../../helper-functions/random";
+import IQuestion from "../../global/interfaces/question.interface";
+import ITag from "../../global/interfaces/tag.interface";
+import IQuestionWithRating from "../../global/interfaces/questionWithRating";
+import IQuestionWithRandomValue from "../../global/interfaces/questionWithRandomValue";
+import shuffle from "../../global/helper-functions/shuffle";
+import random from "../../global/helper-functions/random";
 
 export class QuizGenertator{
 

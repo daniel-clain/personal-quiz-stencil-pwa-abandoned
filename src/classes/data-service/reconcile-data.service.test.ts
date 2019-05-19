@@ -1,21 +1,76 @@
 import ReconcileDataService from "./reconcile-data.service";
-import DataItem from "../../interfaces/data-item.interface";
-import UpdatesObject from "../../interfaces/updates-object.interface";
-import IQuestion from "../../interfaces/question.interface";
+import IDataItem from "../../global/interfaces/data-item.interface";
+import IQuestion from "../../global/interfaces/question.interface";
+import FirestoreDbService from "../firestore-db-service/firestore-db.service";
+import LocalDbService from "../local-db-service/local-db.service";
+import CollectionNames from "../../global/types/collection-names";
+
+class MockFirestoreDbService extends FirestoreDbService{
+  setup(): Promise<void>{return Promise.resolve()}
+  addItem(): Promise<any>{
+    return Promise.resolve('new id')
+  }
+}
+
+const mockFirestoreDbService: MockFirestoreDbService = new MockFirestoreDbService(null)
+
+
+class MockLocalDbService extends LocalDbService{
+  setup(): Promise<void>{return Promise.resolve()}
+  updateItem(): Promise<any>{
+    return Promise.resolve()
+  }
+}
+
+const mockLocalDbService: MockLocalDbService = new MockLocalDbService()
 
 describe ('reconcileData()', () => {
-  const reconcileDataService = new ReconcileDataService()
+  const reconcileDataService = new ReconcileDataService(mockFirestoreDbService, mockLocalDbService)
 
-  describe ('when local data has 1 item and remote is 0', () => {
+  describe ('when firestore returns 1 question and local db returns none', () => {
+    const firestoreQuestion: IQuestion = {
+      id: 'remote data',
+      dateLastUpdated: new Date("2019-01-20"),
+      value: null,
+      correctAnswer: null,
+      correctnessRating: null,
+      dateLastAsked: null,
+      tags: []
+    }
+    mockFirestoreDbService.getNewData = <T extends IDataItem>(collection: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<T[]> => {
+      dateClientLastConnectedToFirestore
+      if(collection == 'Questions'){
+        return Promise.resolve([firestoreQuestion as any])
+      }
+      else {
+        return Promise.resolve([])
+      }
+    }
+    test('should call getNewData in firestoreDbService with collection name Questions and dateClientLastConnectedToFirestore 2019-01-15', () => {
+      const getNewDataSpy = spyOn(mockFirestoreDbService, 'getNewData')
+      reconcileDataService.reconcileDataSinceLasteConnectedDate()
+      expect(getNewDataSpy).toBeCalledWith('Questions', new Date("2019-01-15"))
+
+    })
+
+
+  });
+
+
+
+
+
+
+  /* describe ('when local data has 1 item and remote is 0', () => {
     
-    const localDataItem: DataItem = {
+    const localDataItem: IDataItem = {
       id: '1',
       dateLastUpdated: new Date(),
       value: 'local data'
     }
-    const localData: DataItem[] = [localDataItem]
-    const remoteData: DataItem[] = []
-    const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData)
+    const localData: IDataItem[] = [localDataItem]
+    const remoteData: IDataItem[] = []
+    reconcileDataService.reconcileData(localData, remoteData)
 
     it ('should return an object where updates for remote is the one in local', () => {
       expect(response.updatesForRemote.length).toBe(1)
@@ -29,18 +84,18 @@ describe ('reconcileData()', () => {
   })
 
   describe ('when remote data has 2 items and local is 0', () => {
-    const remoteDataItem1: DataItem = {
+    const remoteDataItem1: IDataItem = {
       id: '1',
       dateLastUpdated: new Date(),
       value: 'remote data 1'
     }
-    const remoteDataItem2: DataItem = {
+    const remoteDataItem2: IDataItem = {
       id: '2',
       dateLastUpdated: new Date(),
       value: 'remote data 2'
     }
-    const localData: DataItem[] = []
-    const remoteData: DataItem[] = [remoteDataItem1, remoteDataItem2]
+    const localData: IDataItem[] = []
+    const remoteData: IDataItem[] = [remoteDataItem1, remoteDataItem2]
     const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData)
 
     it ('should return an object where updates for local is the 2 in remote', () => {
@@ -57,18 +112,18 @@ describe ('reconcileData()', () => {
   })
 
   describe ('when both remote and local have 1 data item but they have different ids', () => {
-    const remoteDataItem: DataItem = {
+    const remoteDataItem: IDataItem = {
       id: 'a',
       dateLastUpdated: new Date(),
       value: 'remote data'
     }
-    const localDataItem: DataItem = {
+    const localDataItem: IDataItem = {
       id: 'z',
       dateLastUpdated: new Date(),
       value: 'local data'
     }
-    const localData: DataItem[] = [localDataItem]
-    const remoteData: DataItem[] = [remoteDataItem]
+    const localData: IDataItem[] = [localDataItem]
+    const remoteData: IDataItem[] = [remoteDataItem]
     const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData)
 
     it ('should return an object where updates for local is the remote data item', () => {
@@ -101,9 +156,9 @@ describe ('reconcileData()', () => {
         dateLastAsked: null,
         tags: []
       }
-      const localData: DataItem[] = [localDataItem]
-      const remoteData: DataItem[] = [remoteDataItem]
-      const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData, 'Questions')
+      const localData: IDataItem[] = [localDataItem]
+      const remoteData: IDataItem[] = [remoteDataItem]
+      const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData)
       it('remote data item should be update local data', () => {
         expect(response.updatesForRemote.length).toBe(1)
         expect(response.updatesForRemote[0]).toBe(localDataItem)
@@ -113,18 +168,18 @@ describe ('reconcileData()', () => {
       })
     })
     describe ('when remote question has a more recent last updated date that local question', () => {
-      const remoteDataItem: DataItem = {
+      const remoteDataItem: IDataItem = {
         id: 'same-ID',
         dateLastUpdated: new Date("2019-03-15"),
         value: 'remote data'
       }
-      const localDataItem: DataItem = {
+      const localDataItem: IDataItem = {
         id: 'same-ID',
         dateLastUpdated: new Date("2019-03-05"),
         value: 'local data'
       }
-      const localData: DataItem[] = [localDataItem]
-      const remoteData: DataItem[] = [remoteDataItem]
+      const localData: IDataItem[] = [localDataItem]
+      const remoteData: IDataItem[] = [remoteDataItem]
       const response: UpdatesObject = reconcileDataService.reconcileData(localData, remoteData)
       it('remote data item should be update local data', () => {
         expect(response.updatesForLocal.length).toBe(1)
@@ -134,5 +189,5 @@ describe ('reconcileData()', () => {
         
       })
     })
-  })
+  }) */
 })

@@ -1,18 +1,16 @@
-import { Component, State, Event, EventEmitter } from '@stencil/core';
+import { Component, State, Event, EventEmitter, Prop } from '@stencil/core';
 import { AuthService } from '../../classes/auth-service/auth.service';
 import { User } from 'firebase';
-import { Views } from '../../types/views';
+import { Views } from '../../global/types/views';
 
 
 @Component({tag: 'nav-component'})
 export class NavComponent {
+  @Prop() authService: AuthService
   @State() connected: boolean
   @Event() viewSelected: EventEmitter<Views>
 
-  authService: AuthService
-
   componentWillLoad(){
-    this.authService = AuthService.getSingletonInstance()
     this.authService.user$.subscribe((user: User) => this.connected = !!user)
   }
   

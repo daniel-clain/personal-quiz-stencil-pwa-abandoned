@@ -1,6 +1,6 @@
 import { Component, State, Prop } from '@stencil/core';
-import ITag from '../../interfaces/tag.interface';
-import DataService from '../../classes/data-service/data.service';
+import ITag from '../../global/interfaces/tag.interface';
+import { DataService } from '../../classes/data-service/data.service';
 
 @Component({ tag: 'tags-component' })
 export class TagsComponent {
@@ -33,6 +33,7 @@ export class TagsComponent {
   
   submitUpdatedTag(){
     this.dataService.update(this.selectedTag, 'Tags')
+    this.selectTag(null)
   }
 
   selectTag(tag){
@@ -44,9 +45,13 @@ export class TagsComponent {
 
     if(deleteConfirmed){
       this.dataService.delete(this.selectedTag, 'Tags')
+      this.selectTag(null)
     }
   }
 
+  selectedTagValueChange(event){
+    this.selectedTag.value = event.path[0].value
+  }
 
   updateTagName(event){
     this.newTag.value = event.path[0].value
@@ -56,34 +61,39 @@ export class TagsComponent {
     return (
       this.tags &&
       <div class='tag-management'>
-        <h3>Add Tag</h3>
-
+        <h2>Add Tag</h2>
+        <div class="field">
           <span class="field__name">Tag Name: </span>
           <input class="field__input" value={this.newTag.value} onInput={event => this.updateTagName(event)}/>
-          <button onClick={() => this.submitNewTag()}>Submit</button>
+        </div>
+        <button onClick={() => this.submitNewTag()}>Submit</button>
 
         <hr/>
 
         <h2>Tags List</h2>
         {this.tags.map((tag: ITag) => {
-            return this.selectedTag && this.selectedTag.id == tag.id ?
-              <div class="list__item--expanded">
-                <hr/>
-                <h3>Edit Tag: { tag.value }</h3>
-                <div class="field">
-                  <span class="field__name">Tag: </span>
-                  <input class="field__input" value={this.selectedTag.value}/>
-                </div>
+          return this.selectedTag && this.selectedTag.id == tag.id ?
+            <div class="list__item--expanded">
+              <hr/>
+              <h3>Edit Tag: { tag.value }</h3>
+              <div class="field">
+                <span class="field__name">Tag: </span>
+                <input 
+                  class="field__input" 
+                  value={this.selectedTag.value}
+                  onInput={event => this.selectedTagValueChange(event)}
+                />
+              </div>
 
-                <button onClick={() => this.submitUpdatedTag()}>Update</button>
-                <button type="button" onClick={() => this.selectTag(null)}>Close</button>
-                <button onClick={() => this.deleteTag()}> Delete</button >
-                <hr/>
-              </div>
-              :
-              <div class="list__item" onClick={() => this.selectTag(tag)}>
-                { tag.value }
-              </div>
+              <button onClick={() => this.submitUpdatedTag()}>Update</button>
+              <button type="button" onClick={() => this.selectTag(null)}>Close</button>
+              <button onClick={() => this.deleteTag()}> Delete</button >
+              <hr/>
+            </div>
+            :
+            <div class="list__item" onClick={() => this.selectTag(tag)}>
+              { tag.value }
+            </div>
         })}
       </div>
     )

@@ -1,9 +1,9 @@
 
 import { QuestionService } from "./question.service";
-import IQuestion from "../../interfaces/question.interface";
+import IQuestion from "../../global/interfaces/question.interface";
 
-import IInMemoryData from '../../interfaces/in-memory-data.interface';
-import DataService from '../data-service/data.service';
+import IInMemoryData from '../../global/interfaces/in-memory-data.interface';
+import { DataService } from '../data-service/data.service';
 
 class DataServiceMock extends DataService{
   inMemory: IInMemoryData  = {

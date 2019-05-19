@@ -1,0 +1,5 @@
+* im not sure about the way i instanciate everything in app-root
+* my dependency injection feels like it could be an antipatter, eg, 
+  - authService is injected into firestoreDbService, then authService and firestoreDbService are both injected into dataService
+  - localDbService and firestoreDbService are injected into reconcileDataService, and then all 3 are injeced into dataService
+  

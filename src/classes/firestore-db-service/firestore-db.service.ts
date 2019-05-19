@@ -1,113 +1,87 @@
-import DataItem from "../../interfaces/data-item.interface";
-import CollectionNames from "../../types/collection-names";
+import IDataItem from "../../global/interfaces/data-item.interface";
+import CollectionNames from "../../global/types/collection-names";
 import { User, firestore } from "firebase";
-import firebase from "firebase";
+import firebase from "firebase/app";
+import 'firebase/firestore'
 import { AuthService } from "../auth-service/auth.service";
+import IFirestoreDbService from "../../global/interfaces/firestore-db-service.interface";
+import FirestoreDocId from "../../global/types/firestore-doc-id.type";
 
 
 
-export default class FirestoreDbService{
+export default class FirestoreDbService implements IFirestoreDbService{
 
   private firestore: firestore.Firestore
-  private authService: AuthService
+  
   private _user: User
   
-  constructor(){
+  constructor(private authService: AuthService){
     this.setup()
   }
 
-  setup(){
+  setup(): Promise<void>{
     
-    firebase.initializeApp(
-      {
-        apiKey: 'AIzaSyB4ffPYSF_0sgjQJXt-GcnE0ifTBof4yTI',
-        authDomain: 'personalquiz-93810.firebaseapp.com',
-        databaseURL: 'https://personalquiz-93810.firebaseio.com',
-        projectId: 'personalquiz-93810',
-        storageBucket: 'personalquiz-93810.appspot.com',
-        messagingSenderId: '1066599785491'
-      }
-    )
+    
     this.firestore = firebase.firestore()
 
     this.authService.user$.subscribe(
       (user: User) => this._user = user
     )
+    return Promise.resolve()
     
   }
 
-  get user(): Promise<User>{
-    return new Promise((resolve) => {
-      if(this._user){
-        resolve(this._user)
-      }
-      else {
-        const subscription = this.authService.user$.subscribe(
-          (user: User) => {
-            subscription.unsubscribe()
-            this._user = user
-            resolve(this._user)
-          }
-        )
-      }
-    });
-  }
-
-  
   getUserCollection(): firestore.DocumentReference{
     if(!this._user) debugger;
     return this.firestore.collection('Users').doc(this._user.uid)
   }
-  
 
-  async addItem(data: DataItem, collectionName: CollectionNames): Promise<string>{
-    const user: User = await this.user
-    const collection: firestore.CollectionReference = await this.firestore.collection('Users').doc(user.uid).collection(collectionName)
-    const documentReference: firestore.DocumentReference = await collection.add(data)
-    data.id = documentReference.id
-    this.updateItem(data, collectionName)
-    return Promise.resolve(data.id)
+  
+  async getDataById<T extends IDataItem>(id: string, collectionName: CollectionNames): Promise<T> {
+    const collection: firestore.CollectionReference = await this.getUserCollection().collection(collectionName)
+    return collection.doc(id).get()
+    .then((documentSnapshot: firestore.DocumentSnapshot) => {
+      return {...documentSnapshot.data(), id: documentSnapshot.id} as T
+    })
   }
 
-  
+  async addItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<FirestoreDocId>{
+    const collection: firestore.CollectionReference = await this.getUserCollection().collection(collectionName)
+    const documentReference: firestore.DocumentReference = await collection.add(data)
+    const id: FirestoreDocId = documentReference.id
+    data.id = id
+    this.updateItem<T>(data, collectionName)
+    return Promise.resolve(id)
+  }
 
-  async updateItem(data: DataItem, collectionName: CollectionNames): Promise<any>{
-    const user: User = await this.user
-    const collection: firestore.CollectionReference = await this.firestore.collection('Users').doc(user.uid).collection(collectionName)
+  async updateItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
+    const collection: firestore.CollectionReference = await this.getUserCollection().collection(collectionName)
     return collection.doc(data.id).update(data)
   }
 
-
-  async deleteItem(id: string, collectionName: CollectionNames): Promise<any>{
-    const user: User = await this.user
-    const collection: firestore.CollectionReference = await this.firestore.collection('Users').doc(user.uid).collection(collectionName)
-    return collection.doc(id).delete()
+  async deleteItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
+    const collection: firestore.CollectionReference = await this.getUserCollection().collection(collectionName)
+    return collection.doc(data.id).delete()
   }
 
-  async getNewData(collection: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<any[]>{
+  async getNewData<T extends IDataItem>(collection: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<T[]>{
 
-    const userDoc: firestore.DocumentReference = this.getUserCollection()
-
-    return userDoc.collection(collection).where('dateLastUpdated', '>', dateClientLastConnectedToFirestore).get()
-    .then((snapshots: firestore.QuerySnapshot) => {
-      return snapshots.docs.map((snapshot: firestore.QueryDocumentSnapshot) => {
-        const data = {...snapshot.data(), id: snapshot.id}
-        return data
+    const dataCollection: firestore.CollectionReference  = this.getUserCollection().collection(collection)
+    let queryPromise: Promise<firestore.QuerySnapshot>
+    if(dateClientLastConnectedToFirestore != null){
+      queryPromise = dataCollection.where('dateLastUpdated', '>', dateClientLastConnectedToFirestore).get()
+    } else {
+      queryPromise = dataCollection.get()
+    }
+    return queryPromise
+    .then((querySnapshot: firestore.QuerySnapshot) => querySnapshot.docs)
+    .then((queryDocumentSnapshot: firestore.QueryDocumentSnapshot[]) => {
+      return queryDocumentSnapshot.map((snapshot: firestore.QueryDocumentSnapshot) => {
+        return {...snapshot.data(), id: snapshot.id} as T
       })
     })
 
-  }
 
-  async getAllData(collection: CollectionNames): Promise<any>{
-    const userDoc: firestore.DocumentReference = this.getUserCollection()
-    return userDoc.collection(collection).get()
-    .then((snapshots: firestore.QuerySnapshot) => {
-      return snapshots.docs.map((snapshot: firestore.QueryDocumentSnapshot) => {
-        const data = {...snapshot.data(), id: snapshot.id}
-        return data
-      })
-    })
   }
-
   
 }

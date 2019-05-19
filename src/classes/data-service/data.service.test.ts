@@ -1,38 +1,83 @@
-import DataService from './data.service'
+import { DataService } from './data.service'
 import FirestoreDbService from '../firestore-db-service/firestore-db.service';
-import CollectionNames from '../../types/collection-names';
-import DataItem from '../../interfaces/data-item.interface';
 import LocalDbService from '../local-db-service/local-db.service';
-import CrudActions from '../../types/crud-actions';
+import IQuestion from '../../global/interfaces/question.interface';
+import { AuthService } from '../auth-service/auth.service';
+import { of } from 'rxjs';
+import { User } from 'firebase';
+import ReconcileDataService from './reconcile-data.service';
 
 class MockFirestoreDbService extends FirestoreDbService{
-  addItem(dataItem: DataItem, collectionName: CollectionNames): Promise<any>{
-    return Promise.resolve()
+  setup(): Promise<void>{return Promise.resolve()}
+  addItem(): Promise<any>{
+    return Promise.resolve('new id')
   }
 }
 
-const mockFirestoreDbService: MockFirestoreDbService = new MockFirestoreDbService()
+const mockFirestoreDbService: MockFirestoreDbService = new MockFirestoreDbService(null)
 
 
 class MockLocalDbService extends LocalDbService{
-  updateItem(dataItem: DataItem, collectionName: CollectionNames, action: CrudActions): Promise<any>{
+  setup(): Promise<void>{return Promise.resolve()}
+  addItem(): Promise<any>{
     return Promise.resolve()
   }
 }
 
 const mockLocalDbService: MockLocalDbService = new MockLocalDbService()
 
+
+class MockAuthService extends AuthService{
+  setup(){}
+  user$ = of({uid: '123'} as User)
+}
+
+const mockAuthService: MockAuthService = new MockAuthService()
+
+
+class MockReconcileDataService extends ReconcileDataService{
+  reconcileDataSinceLasteConnectedDate(): Promise<void>{
+    return Promise.resolve()
+  }
+  
+}
+
+const mockReconcileDataService: MockReconcileDataService = new MockReconcileDataService(mockFirestoreDbService, mockLocalDbService)
+
 describe ('add()', () => {
   describe ('when connected to firestore', () => {
-    const dataServiceInstance: DataService = new DataService(mockFirestoreDbService, mockLocalDbService, null, null)
-    describe ('when adding a valid question', () => {
-      dataServiceInstance.add(null, 'Questions')
+    const dataServiceInstance: DataService = new DataService(mockFirestoreDbService, mockLocalDbService, mockReconcileDataService, mockAuthService)
+
+    describe ('when adding a valid question', async () => {
+      const testQuestion: IQuestion = {
+        value: 'test question',
+        dateLastAsked: null,
+        dateLastUpdated: null,
+        correctAnswer: null,
+        id: null,
+        tags: [],
+        correctnessRating: null
+      }
+      const firebasedReturnedId = 'new id'
+      const firestoreDbAddMockFunc = jest.fn()
+      firestoreDbAddMockFunc.mockResolvedValue(Promise.resolve(firebasedReturnedId))
+      mockFirestoreDbService.addItem = firestoreDbAddMockFunc
+
+       
+      const localDbAddMockFunc = jest.fn()
+      localDbAddMockFunc.mockResolvedValue(Promise.resolve())
+      mockLocalDbService.addItem = localDbAddMockFunc
+     
+      dataServiceInstance.add(testQuestion, 'Questions')
+      
+
       it ('should call firestoreDbService.addItem()', () => {
-        
+        expect(firestoreDbAddMockFunc).toHaveBeenCalledWith(testQuestion, 'Questions')
       });
 
-      it ('should call localDbService.updateItem', () => {
-        
+      it ('should call localDbService.addItem() where dataItem.id should not be undefined', () => {         
+        expect(localDbAddMockFunc).toHaveBeenCalledWith(testQuestion, 'Questions') 
+        expect(testQuestion.id).toEqual(firebasedReturnedId)
       });
       it ('questions should be in inMemory Questions array', () => {
         

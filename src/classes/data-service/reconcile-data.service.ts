@@ -1,86 +1,112 @@
-import DataItem from "../../interfaces/data-item.interface";
-import UpdatesObject from "../../interfaces/updates-object.interface";
-import CollectionNames from "../../types/collection-names";
-import IQuestion from "../../interfaces/question.interface";
+import IDataItem from "../../global/interfaces/data-item.interface";
+import FirestoreDbService from "../firestore-db-service/firestore-db.service";
+import LocalDbService from "../local-db-service/local-db.service";
+import CollectionNames from "../../global/types/collection-names";
+import IQuestion from "../../global/interfaces/question.interface";
+import ITag from "../../global/interfaces/tag.interface";
+import FirestoreDocId from "../../global/types/firestore-doc-id.type";
 
 export default class ReconcileDataService{
-  reconcileData(localDataItems: DataItem[], remoteDataItems: DataItem[], collectionName?: CollectionNames): UpdatesObject{
 
-    const resolvedConflictedItems: UpdatesObject = {
-      updatesForLocal: [],
-      updatesForRemote: []
-    }
-    localDataItems.forEach(
-      (localData: DataItem) => {
-        remoteDataItems.forEach((remoteData: DataItem) => {
-          if(remoteData.id == localData.id){
-            if(collectionName == 'Questions'){
-              const remoteQuestion: IQuestion = remoteData as IQuestion
-              const localQuestion: IQuestion = localData as IQuestion
-              if(localQuestion.dateLastUpdated > remoteQuestion.dateLastUpdated){
-                if(localQuestion.dateLastAsked != localQuestion.dateLastUpdated &&
-                  remoteQuestion.dateLastAsked == remoteQuestion.dateLastUpdated){
-                  const modifiedCorrectnessRating = Math.round(
-                    localQuestion.correctnessRating * 0.7 + remoteQuestion.correctnessRating * 0.3
-                  )
-                  resolvedConflictedItems.updatesForRemote.push({...localQuestion, correctnessRating: modifiedCorrectnessRating} as IQuestion)
-                }
-                else{
-                  resolvedConflictedItems.updatesForRemote.push(localData)
-                }
-              }
-              else{
-                if(remoteQuestion.dateLastAsked != remoteQuestion.dateLastUpdated &&
-                  localQuestion.dateLastAsked == localQuestion.dateLastUpdated){
-                  const modifiedCorrectnessRating = Math.round(
-                    remoteQuestion.correctnessRating * 0.7 + localQuestion.correctnessRating * 0.3
-                  )
-                  resolvedConflictedItems.updatesForLocal.push({...remoteQuestion, correctnessRating: modifiedCorrectnessRating} as IQuestion)
-                }
-                else{
-                  resolvedConflictedItems.updatesForLocal.push(remoteQuestion)
-                }
-              }
-            }
-            else{
-              if(localData.dateLastUpdated > remoteData.dateLastUpdated){
-                resolvedConflictedItems.updatesForRemote.push(localData)
-              }
-              else{
-                resolvedConflictedItems.updatesForLocal.push(remoteData)
-              }
-            }
+  constructor(private firestoreDbService: FirestoreDbService, private localDbService: LocalDbService,){}
+
+  async reconcileDataSinceLasteConnectedDate(): Promise<void>{
+
+    const dateClientLastConnectedToFirestore: Date = await this.localDbService.getDateClientLastConnectedToFirestore()
+    const firestoreQuestions: IQuestion[] = await this.firestoreDbService.getNewData<IQuestion>('Questions', dateClientLastConnectedToFirestore)
+    const localQuestions: IQuestion[] = await this.localDbService.getNewData<IQuestion>('Questions', dateClientLastConnectedToFirestore)    
+    const firestoreTags: ITag[] = await this.firestoreDbService.getNewData<ITag>('Tags', dateClientLastConnectedToFirestore)    
+    const localTags: ITag[] = await this.localDbService.getNewData<ITag>('Tags', dateClientLastConnectedToFirestore)
+
+    return Promise.all([
+      this.reconcileData<IQuestion>(localQuestions, firestoreQuestions, 'Questions'),
+      this.reconcileData<ITag>(localTags, firestoreTags, 'Tags'),
+      this.resolveConflictingRemoteAndLocalDataItems<IQuestion>(localQuestions, firestoreQuestions, 'Questions'),
+      this.resolveConflictingRemoteAndLocalDataItems(localTags, firestoreTags, 'Tags'),
+    ]).then(() => this.localDbService.updateDateClientLastConnectedToFirestore())
+  }
+
+  
+  reconcileData<T extends IDataItem>(localDataSinceLastConnected: T[], remoteDataSinceLastConnected: T[], collectionName: CollectionNames): Promise<void>{
+
+    const nonConflictingLocalDataItems: T[] = localDataSinceLastConnected.filter(
+      (localData: T) => !remoteDataSinceLastConnected.some((remoteData: T) => remoteData.id == localData.id)
+    )
+    console.log(`${collectionName} updated in local since last connected: `, nonConflictingLocalDataItems);
+    
+    const nonConflictingRemoteDataItems: T[] = remoteDataSinceLastConnected.filter(
+        (remoteData: T) => !localDataSinceLastConnected.some((localData: T) => localData.id == remoteData.id)
+    )
+    console.log(`${collectionName} updated in remote since last connected: `, nonConflictingRemoteDataItems);
+
+    const dataAddedToLocalDbPromises: Promise<void>[] = nonConflictingRemoteDataItems.map(
+      (remoteDataItem: T) => {
+        return this.localDbService.getDataById(remoteDataItem.id, collectionName)
+        .then((localDataItem: T) => {
+          if(localDataItem){
+            console.log('replacing localDataItem with up to date remoteDataItem', localDataItem, remoteDataItem);
+            this.localDbService.updateItem(remoteDataItem, collectionName)
+          }
+          else {
+            console.log('remoteDataItem added since last connected, adding to local data', remoteDataItem);
+            this.localDbService.addItem(remoteDataItem, collectionName)
           }
         })
       }
     )
 
-    
-    const dataThatLocalHasThatRemoteDoesnt: DataItem[] = localDataItems.filter(
-      (localData: DataItem) => !remoteDataItems.some((remoteData: DataItem) => remoteData.id == localData.id)
+    const dataAddedToFirestorePromises: Promise<void>[] = nonConflictingLocalDataItems.map(
+      (localDataItem: T) => {
+        if(localDataItem.id.includes('temp')){
+          console.log('localDataItem added since last connected, adding to remote data', localDataItem);
+          return this.firestoreDbService.addItem({...localDataItem, id: null}, collectionName)
+          .then((newId: FirestoreDocId) => {
+            const oldItem: T = {...localDataItem}
+            const updatedDataItem: T = {...localDataItem, id: newId}
+            return this.localDbService.addItem(updatedDataItem, collectionName)
+            .then(() => this.localDbService.deleteItem(oldItem, collectionName))
+          })
+        }
+        else{  
+          return this.firestoreDbService.getDataById(localDataItem.id, collectionName)
+          .then((remoteDataItem: T) => {
+            if(remoteDataItem && remoteDataItem.dateLastUpdated){
+              console.log('replacing remoteDataItem with up to date localDataItem', localDataItem, localDataItem);
+              return this.firestoreDbService.updateItem(localDataItem, collectionName)
+            }
+            else {
+              throw 'this should not occur'
+            }
+          })
+        }
+      }
     )
-    console.log(dataThatLocalHasThatRemoteDoesnt);
-
-    
-    const dataThatRemoteHasThatLocalDoesnt: DataItem[] = remoteDataItems.filter(
-        (remoteData: DataItem) => !localDataItems.some((localData: DataItem) => localData.id == remoteData.id)
-    )
-    console.log(dataThatRemoteHasThatLocalDoesnt);
-
-    
 
 
-    return {
-      updatesForLocal: [
-        ...dataThatRemoteHasThatLocalDoesnt,
-        ...resolvedConflictedItems.updatesForLocal
-      ],
-      updatesForRemote: [
-        ...dataThatLocalHasThatRemoteDoesnt,
-        ...resolvedConflictedItems.updatesForRemote
-      ]
-    }
+    return Promise.all([dataAddedToFirestorePromises, dataAddedToLocalDbPromises]).then(() => Promise.resolve())
   }
 
+  private resolveConflictingRemoteAndLocalDataItems<T extends IDataItem>(localDataSinceLastConnected: T[], remoteDataSinceLastConnected: T[], collectionName: CollectionNames){
+    let updatesForLocal: T[] = []
+    let updatesForRemote: T[] = []
+    localDataSinceLastConnected.forEach(
+      (localData: T) => {
+        remoteDataSinceLastConnected.forEach((remoteData: T) => {
+          if(remoteData.id == localData.id){
+            localData.dateLastUpdated > remoteData.dateLastUpdated 
+            ? updatesForRemote.push(localData)
+            : updatesForLocal.push(remoteData)
+          }
+        })
+      }
+    )
+    const updatesForRemotePromises: Promise<void> [] = updatesForRemote.map(
+      (dataItem: T) => this.firestoreDbService.updateItem(dataItem, collectionName))
+
+    const updatesForLocalPromises: Promise<void> [] = updatesForLocal.map(
+      (dataItem: T) => this.localDbService.updateItem(dataItem, collectionName))
+
+    return Promise.all([updatesForLocalPromises, updatesForRemotePromises]).then(() => Promise.resolve())
+  }
   
 }

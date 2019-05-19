@@ -9,11 +9,17 @@ import '@stencil/core';
 
 
 import {
+  AuthService,
+} from './classes/auth-service/auth.service';
+import {
   EventEmitter,
 } from '@stencil/core';
 import {
   Views,
-} from './types/views';
+} from './global/types/views';
+import {
+  DataService,
+} from './classes/data-service/data.service';
 
 
 export namespace Components {
@@ -21,8 +27,11 @@ export namespace Components {
   interface AppRoot {}
   interface AppRootAttributes extends StencilHTMLAttributes {}
 
-  interface NavComponent {}
+  interface NavComponent {
+    'authService': AuthService;
+  }
   interface NavComponentAttributes extends StencilHTMLAttributes {
+    'authService'?: AuthService;
     'onViewSelected'?: (event: CustomEvent<Views>) => void;
   }
 

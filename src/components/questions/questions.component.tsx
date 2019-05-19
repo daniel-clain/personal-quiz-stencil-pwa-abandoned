@@ -1,9 +1,8 @@
 import { Component, State, Prop } from '@stencil/core';
-import { QuestionViews } from '../../types/question-views';
-import IQuestion from '../../interfaces/question.interface';
-import ITag from '../../interfaces/tag.interface';
-import { QuestionService } from "../../classes/question-service/question.service";
-import DataService from '../../classes/data-service/data.service';
+import { QuestionViews } from '../../global/types/question-views';
+import IQuestion from '../../global/interfaces/question.interface';
+import ITag from '../../global/interfaces/tag.interface';
+import { DataService } from '../../classes/data-service/data.service';
 
 @Component({tag: 'questions-component'})
 export class QuestionsComponent {
@@ -13,16 +12,10 @@ export class QuestionsComponent {
   @State() tags: ITag[]
   @State() newQuestion: IQuestion 
   @State() selectedQuestion: IQuestion
-
   
   componentWillLoad(){
-
-    this.dataService.tags$.subscribe((tags: ITag[]) => {
-      console.log('tag service subscribe tags', tags);
-      this.tags = [...tags]
-    })
+    this.dataService.tags$.subscribe((tags: ITag[]) => this.tags = [...tags])
     this.dataService.questions$.subscribe((questions: IQuestion[]) => this.questions = [...questions])
-
     this.resetNewQuestion()
   }  
 
@@ -44,15 +37,13 @@ export class QuestionsComponent {
 
 
   addQuestion(){
-    if(!this.addQuestionValidation()){
-      return
-    }
-
-    this.dataService.add(this.newQuestion, 'Questions')
+    if(!this.questionValidation()) return
+    
+    this.dataService.add<IQuestion>(this.newQuestion, 'Questions')
     this.resetNewQuestion()
   }
 
-  addQuestionValidation(): boolean{
+  questionValidation(): boolean{
     
     if(!this.newQuestion.value || this.newQuestion.value == ''){
       console.log('can not submit new question because value is empty');
@@ -68,15 +59,22 @@ export class QuestionsComponent {
   selectedQestionValueChange(event){
     this.selectedQuestion.value =  event.path[0].value
   }
+  selectedQestionAnswerChange(event){
+    this.selectedQuestion.correctAnswer =  event.path[0].value
+  }
 
-  updateQuestion(){
+  updateQuestion(){    
+    if(!this.questionValidation()) return
     this.dataService.update(this.selectedQuestion, 'Questions')
     this.selectQuestion(null)
   }
 
-  deleteQuestion(){
-    this.dataService.delete(this.selectedQuestion, 'Questions')
-    this.selectQuestion(null)
+  deleteQuestion(){    
+    const deleteConfirmed: boolean = window.confirm(`Are you sure you want to delete question: \n\n ${this.selectedQuestion.value}`)
+    if(deleteConfirmed){
+      this.dataService.delete(this.selectedQuestion, 'Questions')
+      this.selectQuestion(null)
+    }
   }
 
   toggleQuestionTag(tag: ITag, type: string){
@@ -105,7 +103,7 @@ export class QuestionsComponent {
       this.tags &&
       <div class='question-management'>
       <div class="add-question">
-          <h3>Add Question</h3>        
+          <h2>Add Question</h2>        
           <div class="field add-question__value">
             <span class="field__name">Question: </span>
             <input class="field__input" value={this.newQuestion.value} onInput={event => this.questionValueInputHandler(event)} />
@@ -155,14 +153,23 @@ export class QuestionsComponent {
             this.selectedQuestion && this.selectedQuestion.id == question.id &&
             <div class="list__item--expanded">
               <hr/>
-                <h3>Edit Question: {question.value}</h3>
+                <h2>Edit Question: {question.value}</h2>
                 <div class="field">
                   <span class="field__name">Question: </span>
-                  <input class="field__input" value={this.selectedQuestion.value} onInput={event => this.selectedQestionValueChange(event)}/>
+                  <input 
+                    class="field__input" 
+                    value={this.selectedQuestion.value} 
+                    onInput={event => this.selectedQestionValueChange(event)}
+                  />
                 </div>
                 <div class="field">
                   <span class="field__name">Correct Answer: </span>
-                  <textarea class="field__text-area field__input" >{this.selectedQuestion.correctAnswer}</textarea>
+                  <textarea 
+                    class="field__text-area field__input"
+                    onInput={event => this.selectedQestionAnswerChange(event)}
+                  >
+                    {this.selectedQuestion.correctAnswer}
+                  </textarea>
                 </div>
                 <div class="field">
                   <span class="field__name">Tags: </span>
@@ -191,7 +198,7 @@ export class QuestionsComponent {
           </div>
         }
         {this.questionView == 'Tag Management' && 
-          <tags-component></tags-component>
+          <tags-component dataService={this.dataService}></tags-component>
         }
       </div>
     );
