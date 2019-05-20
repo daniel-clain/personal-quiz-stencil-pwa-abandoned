@@ -139,11 +139,17 @@ export class DataService{
   }
 
   async delete(data: IDataItem, collectionName: CollectionNames): Promise<void>{
+    const promiseArray: Promise<void>[] = []
     if(this.connected){
-      this.firestoreDbService.deleteItem(data, collectionName)
-      this.localDbService.updateDateClientLastConnectedToFirestore()
+      promiseArray.push(this.firestoreDbService.deleteItem(data, collectionName))
+      promiseArray.push(this.localDbService.updateDateClientLastConnectedToFirestore())
+      promiseArray.push(this.localDbService.deleteItem(data, collectionName)) 
+    }  
+    else {
+      promiseArray.push(this.localDbService.markItemForDelete(data, collectionName)) 
     }
-    return this.localDbService.deleteItem(data, collectionName)    
+    
+    return Promise.all(promiseArray).then(() => Promise.resolve())
   }
 
 

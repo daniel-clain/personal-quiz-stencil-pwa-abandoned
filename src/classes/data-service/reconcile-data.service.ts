@@ -57,27 +57,34 @@ export default class ReconcileDataService{
 
     const dataAddedToFirestorePromises: Promise<void>[] = nonConflictingLocalDataItems.map(
       (localDataItem: T) => {
-        if(localDataItem.id.includes('temp')){
-          console.log('localDataItem added since last connected, adding to remote data', localDataItem);
-          return this.firestoreDbService.addItem({...localDataItem, id: null}, collectionName)
-          .then((newId: FirestoreDocId) => {
-            const oldItem: T = {...localDataItem}
-            const updatedDataItem: T = {...localDataItem, id: newId}
-            return this.localDbService.addItem(updatedDataItem, collectionName)
-            .then(() => this.localDbService.deleteItem(oldItem, collectionName))
-          })
-        }
-        else{  
-          return this.firestoreDbService.getDataById(localDataItem.id, collectionName)
-          .then((remoteDataItem: T) => {
-            if(remoteDataItem && remoteDataItem.dateLastUpdated){
-              console.log('replacing remoteDataItem with up to date localDataItem', localDataItem, localDataItem);
-              return this.firestoreDbService.updateItem(localDataItem, collectionName)
-            }
-            else {
-              throw 'this should not occur'
-            }
-          })
+        if(localDataItem.markedForDelete){
+          if(!localDataItem.id.includes('temp')){
+            this.firestoreDbService.deleteItem(localDataItem, collectionName)
+          }
+          this.localDbService.deleteItem(localDataItem, collectionName)
+        }else{
+          if(localDataItem.id.includes('temp')){
+            console.log('localDataItem added since last connected, adding to remote data', localDataItem);
+            return this.firestoreDbService.addItem({...localDataItem, id: null}, collectionName)
+            .then((newId: FirestoreDocId) => {
+              const oldItem: T = {...localDataItem}
+              const updatedDataItem: T = {...localDataItem, id: newId}
+              return this.localDbService.addItem(updatedDataItem, collectionName)
+              .then(() => this.localDbService.deleteItem(oldItem, collectionName))
+            })
+          }
+          else{  
+            return this.firestoreDbService.getDataById(localDataItem.id, collectionName)
+            .then((remoteDataItem: T) => {
+              if(remoteDataItem && remoteDataItem.dateLastUpdated){
+                console.log('replacing remoteDataItem with up to date localDataItem', localDataItem, localDataItem);
+                return this.firestoreDbService.updateItem(localDataItem, collectionName)
+              }
+              else {
+                throw 'this should not occur'
+              }
+            })
+          }
         }
       }
     )
@@ -93,9 +100,12 @@ export default class ReconcileDataService{
       (localData: T) => {
         remoteDataSinceLastConnected.forEach((remoteData: T) => {
           if(remoteData.id == localData.id){
-            localData.dateLastUpdated > remoteData.dateLastUpdated 
-            ? updatesForRemote.push(localData)
-            : updatesForLocal.push(remoteData)
+            if(localData.dateLastUpdated > remoteData.dateLastUpdated){
+              updatesForRemote.push(localData)
+            } 
+            else {
+              updatesForLocal.push(remoteData)
+            }
           }
         })
       }

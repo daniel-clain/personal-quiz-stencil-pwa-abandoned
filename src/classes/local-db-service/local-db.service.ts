@@ -50,6 +50,7 @@ export default class LocalDbService implements ILocalDbService{
     })
   } 
 
+
   
   getDateClientLastConnectedToFirestore(): Promise<Date>{
     const objectStore: IDBObjectStore = this.getObjectStore('Date Last Connected To Firestore')
@@ -64,9 +65,12 @@ export default class LocalDbService implements ILocalDbService{
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const request: IDBRequest = objectStore.getAll()
     return new Promise((resolve, reject) => {
-      request.onsuccess = ((event: any) => resolve(event.target.result))
+      request.onsuccess = (event: any) => {
+        const filteredData: T = event.target.result.filter(dataItem => !dataItem.markedForDelete)
+        resolve(filteredData)
+      }
       request.onerror = error => reject(error)
-    }); 
+    });
   }
 
   async updateDateClientLastConnectedToFirestore(){
@@ -133,6 +137,14 @@ export default class LocalDbService implements ILocalDbService{
   deleteItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const request: IDBRequest = objectStore.delete(data.id)
+    return this.requestResolver<void>(request)
+    .then(() => this.dataUpdateSubject.next(collectionName))
+  }
+
+  markItemForDelete<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const updatedItem = {...data, markedForDelete: true}
+    const request: IDBRequest = objectStore.put(updatedItem)
     return this.requestResolver<void>(request)
     .then(() => this.dataUpdateSubject.next(collectionName))
   }
