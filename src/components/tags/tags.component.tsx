@@ -1,6 +1,7 @@
 import { Component, State, Prop } from '@stencil/core';
 import ITag from '../../global/interfaces/tag.interface';
 import { DataService } from '../../classes/data-service/data.service';
+import CollectionNames from '../../global/enums/collection-names.enum';
 
 @Component({ tag: 'tags-component' })
 export class TagsComponent {
@@ -26,13 +27,13 @@ export class TagsComponent {
     if(!this.newTag.value){
       return
     }
-    this.dataService.add(this.newTag, 'Tags')
+    this.dataService.add(this.newTag, CollectionNames['Tags'])
     this.resetNewTag()
     
   }
   
   submitUpdatedTag(){
-    this.dataService.update(this.selectedTag, 'Tags')
+    this.dataService.update(this.selectedTag, CollectionNames['Tags'])
     this.selectTag(null)
   }
 
@@ -44,7 +45,7 @@ export class TagsComponent {
     const deleteConfirmed: boolean = window.confirm(`Are you sure you want to delete tag: \n\n ${this.selectedTag.value}`)
 
     if(deleteConfirmed){
-      this.dataService.delete(this.selectedTag, 'Tags')
+      this.dataService.delete(this.selectedTag, CollectionNames['Tags'])
       this.selectTag(null)
     }
   }

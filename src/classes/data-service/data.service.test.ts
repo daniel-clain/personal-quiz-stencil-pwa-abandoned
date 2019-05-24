@@ -1,13 +1,14 @@
 import { DataService } from './data.service'
-import FirestoreDbService from '../firestore-db-service/firestore-db.service';
+import RemoteDbService from '../remote-db-service/remote-db.service';
 import LocalDbService from '../local-db-service/local-db.service';
 import IQuestion from '../../global/interfaces/question.interface';
 import { AuthService } from '../auth-service/auth.service';
 import { of } from 'rxjs';
 import { User } from 'firebase';
 import ReconcileDataService from './reconcile-data.service';
+import CollectionNames from '../../global/enums/collection-names.enum';
 
-class MockFirestoreDbService extends FirestoreDbService{
+class MockFirestoreDbService extends RemoteDbService{
   setup(): Promise<void>{return Promise.resolve()}
   addItem(): Promise<any>{
     return Promise.resolve('new id')
@@ -68,10 +69,10 @@ describe ('add()', () => {
       localDbAddMockFunc.mockResolvedValue(Promise.resolve())
       mockLocalDbService.addItem = localDbAddMockFunc
      
-      dataServiceInstance.add(testQuestion, 'Questions')
+      dataServiceInstance.add(testQuestion, CollectionNames['Questions'])
       
 
-      it ('should call firestoreDbService.addItem()', () => {
+      it ('should call remoteDbService.addItem()', () => {
         expect(firestoreDbAddMockFunc).toHaveBeenCalledWith(testQuestion, 'Questions')
       });
 

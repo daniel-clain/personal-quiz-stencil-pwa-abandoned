@@ -3,6 +3,7 @@ import { QuestionViews } from '../../global/types/question-views';
 import IQuestion from '../../global/interfaces/question.interface';
 import ITag from '../../global/interfaces/tag.interface';
 import { DataService } from '../../classes/data-service/data.service';
+import CollectionNames from '../../global/enums/collection-names.enum';
 
 @Component({tag: 'questions-component'})
 export class QuestionsComponent {
@@ -39,7 +40,7 @@ export class QuestionsComponent {
   addQuestion(){
     if(!this.questionValidation()) return
     
-    this.dataService.add<IQuestion>(this.newQuestion, 'Questions')
+    this.dataService.add<IQuestion>(this.newQuestion, CollectionNames['Questions'])
     this.resetNewQuestion()
   }
 
@@ -65,14 +66,14 @@ export class QuestionsComponent {
 
   updateQuestion(){    
     if(!this.questionValidation()) return
-    this.dataService.update(this.selectedQuestion, 'Questions')
+    this.dataService.update(this.selectedQuestion, CollectionNames['Questions'])
     this.selectQuestion(null)
   }
 
   deleteQuestion(){    
     const deleteConfirmed: boolean = window.confirm(`Are you sure you want to delete question: \n\n ${this.selectedQuestion.value}`)
     if(deleteConfirmed){
-      this.dataService.delete(this.selectedQuestion, 'Questions')
+      this.dataService.delete(this.selectedQuestion, CollectionNames['Questions'])
       this.selectQuestion(null)
     }
   }

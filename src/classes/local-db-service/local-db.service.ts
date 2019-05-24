@@ -1,12 +1,15 @@
-import CollectionNames from "../../global/types/collection-names";
-import IDataItem from "../../global/interfaces/data-item.interface";
+
+
 import ILocalDbService from "../../global/interfaces/local-db-service.interface";
+import IDataItem from '../../global/interfaces/data-item.interface';
 import { Subject } from "rxjs";
+import CollectionNames from '../../global/enums/collection-names.enum';
+import getDateOneMonthAgo from './../../global/helper-functions/getDateOneMonthAgo'
 
 export default class LocalDbService implements ILocalDbService{
 
   localDatabase: IDBDatabase
-  dataUpdateSubject: Subject<CollectionNames> = new Subject()
+  dataUpdate$: Subject<CollectionNames> = new Subject()
 
 
   setup(): Promise<void>{
@@ -23,10 +26,12 @@ export default class LocalDbService implements ILocalDbService{
         questionsObjectStore.createIndex('dateLastAsked', 'dateLastAsked')
         questionsObjectStore.createIndex('dateLastUpdated', 'dateLastUpdated')
         questionsObjectStore.createIndex('tags', 'tags')
+        questionsObjectStore.createIndex('markedForDelete', 'markedForDelete')
         const tagsObjectStore: IDBObjectStore = localDb.createObjectStore('Tags', { keyPath: 'id' })
         tagsObjectStore.createIndex('id', 'id')
         tagsObjectStore.createIndex('value', 'value')
         tagsObjectStore.createIndex('dateLastUpdated', 'dateLastUpdated')
+        tagsObjectStore.createIndex('markedForDelete', 'markedForDelete')
         const dateLastConnectedObjectStore: IDBObjectStore = localDb.createObjectStore('Date Last Connected To Firestore', { keyPath: 'id'});
         dateLastConnectedObjectStore.createIndex('dateLastConnectedToFirestore', 'dateLastConnectedToFirestore')
         this.setInitialDateLastConnectedToFirestoreField(request)
@@ -38,7 +43,7 @@ export default class LocalDbService implements ILocalDbService{
     });
   }    
 
-  setInitialDateLastConnectedToFirestoreField(openDbRequest: IDBOpenDBRequest){
+  private setInitialDateLastConnectedToFirestoreField(openDbRequest: IDBOpenDBRequest){
     const emptyDateObj = {id: 'default', dateLastConnectedToFirestore: null}
 
     const request = openDbRequest.transaction
@@ -50,11 +55,45 @@ export default class LocalDbService implements ILocalDbService{
     })
   } 
 
+  async getUpdatedDataItemsSinceClientLastConnectedToRemoteDb(collectionName: CollectionNames, dateClientLastConnectedToRemoteDb: Date): Promise<IDataItem[]>{
+    const keyRangeValue = IDBKeyRange.lowerBound(dateClientLastConnectedToRemoteDb, true);
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const dateLastUpdatedIndex = objectStore.index('dateLastUpdated');
+    const request: IDBRequest = dateLastUpdatedIndex.openCursor(keyRangeValue)
+    return new Promise((resolve, reject) => {      
+      const returnDataArray: IDataItem[] = []
+      request.onsuccess = (event: any) => {
+        const cursor: IDBCursorWithValue = event.target.result;
+        if(cursor) {
+          const dataItem: IDataItem = cursor.value
+          returnDataArray.push(dataItem)
+          cursor.continue();
+        }
+        else{
+          resolve(returnDataArray)
+        }
+      }
+      request.onerror = error => reject(error)
+    });
+  }
+
+  async hasNeverConnectedToRemoteDbBefore(): Promise<boolean> {
+    const dateLastConnectedToRemoteDb: Date = await this.getDateLastConnectedToRemoteDb()
+    return dateLastConnectedToRemoteDb == null
+  }
+
+  async hasntConnectedToRemoteDbInOverAMonth(): Promise<boolean> {
+    const dateLastConnectedToRemoteDb: Date = await this.getDateLastConnectedToRemoteDb()
+    const oneMonthAgo = getDateOneMonthAgo()
+    return dateLastConnectedToRemoteDb == null || dateLastConnectedToRemoteDb < oneMonthAgo
+  }
+
 
   
-  getDateClientLastConnectedToFirestore(): Promise<Date>{
-    const objectStore: IDBObjectStore = this.getObjectStore('Date Last Connected To Firestore')
-    const request: IDBRequest = objectStore.get('default')
+  getDateLastConnectedToRemoteDb(): Promise<Date>{
+    const request: IDBRequest = this.localDatabase
+    .transaction(['Date Last Connected To Firestore'], 'readwrite')
+    .objectStore('Date Last Connected To Firestore').get('default')
     return new Promise((resolve, reject) => {      
       request.onsuccess = ((event: any) => resolve(event.target.result.dateLastConnectedToFirestore))
       request.onerror = error => reject(error)
@@ -75,42 +114,44 @@ export default class LocalDbService implements ILocalDbService{
 
   async updateDateClientLastConnectedToFirestore(){
     const newDateObj = {id: 'default', dateLastConnectedToFirestore: new Date()}
-    const objectStore: IDBObjectStore = this.getObjectStore('Date Last Connected To Firestore')
-    const request: IDBRequest = objectStore.put(newDateObj)
+    const request: IDBRequest = this.localDatabase
+    .transaction(['Date Last Connected To Firestore'], 'readwrite')
+    .objectStore('Date Last Connected To Firestore').put(newDateObj)
     return this.requestResolver<void>(request)
-  } 
-
-  getNewData<T extends IDataItem>(collectionName: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<T[]>{
-    if(dateClientLastConnectedToFirestore == null){
-      return Promise.resolve([])
-    }
-    const keyRangeValue = IDBKeyRange.lowerBound(dateClientLastConnectedToFirestore, true);
-    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
-    const dateLastUpdatedIndex = objectStore.index('dateLastUpdated');
-    const request: IDBRequest = dateLastUpdatedIndex.openCursor(keyRangeValue)
-    return new Promise((resolve, reject) => {      
-      const returnDataArray: T[] = []
-      request.onsuccess = (event: any) => {
-        const cursor: IDBCursorWithValue = event.target.result;
-        if(cursor) {
-          const dataItem: T = cursor.value
-          returnDataArray.push(dataItem)
-          cursor.continue();
-        }
-        else{
-          resolve(returnDataArray)
-        }
-      }
-      request.onerror = error => reject(error)
-    });
   }
-
   
 
   private getObjectStore(collectionName: CollectionNames): IDBObjectStore{
     return this.localDatabase
-      .transaction([collectionName], 'readwrite')
-      .objectStore(collectionName)
+      .transaction([collectionName.toString()], 'readwrite')
+      .objectStore(collectionName.toString())
+  }
+
+  getDataMarkedForDelete(): Promise<IDataItem[]>{
+    const collectionPromises: Promise<IDataItem[]>[] = []
+    for(let key in CollectionNames){
+      const collectionName: CollectionNames = CollectionNames[CollectionNames[key]]
+      const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+      const markedForDeleteIndex = objectStore.index('markedForDelete');
+      const request: IDBRequest = markedForDeleteIndex.openCursor()
+      collectionPromises.push(new Promise((resolve, reject) => {      
+        const returnDataArray: IDataItem[] = []
+        request.onsuccess = (event: any) => {
+          const cursor: IDBCursorWithValue = event.target.result;
+          if(cursor) {
+            const dataItem: IDataItem = cursor.value
+            returnDataArray.push(dataItem)
+            cursor.continue();
+          }
+          else{
+            resolve(returnDataArray)
+          }
+        }
+        request.onerror = error => reject(error)
+      }))
+    }
+    return Promise.all(collectionPromises)
+    .then((promiseResponses) => promiseResponses.reduce((returnDataItems: IDataItem[], promiseResponse: IDataItem[]) => returnDataItems.concat(promiseResponse), []))
   }
 
   
@@ -124,21 +165,21 @@ export default class LocalDbService implements ILocalDbService{
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const request: IDBRequest = objectStore.add(data)
     return this.requestResolver<void>(request)
-    .then(() => this.dataUpdateSubject.next(collectionName))
+    .then(() => this.dataUpdate$.next(collectionName))
   }
 
   updateItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const request: IDBRequest = objectStore.put(data)
     return this.requestResolver<void>(request)
-    .then(() => this.dataUpdateSubject.next(collectionName))
+    .then(() => this.dataUpdate$.next(collectionName))
   }
 
   deleteItem<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const request: IDBRequest = objectStore.delete(data.id)
     return this.requestResolver<void>(request)
-    .then(() => this.dataUpdateSubject.next(collectionName))
+    .then(() => this.dataUpdate$.next(collectionName))
   }
 
   markItemForDelete<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
@@ -146,7 +187,7 @@ export default class LocalDbService implements ILocalDbService{
     const updatedItem = {...data, markedForDelete: true}
     const request: IDBRequest = objectStore.put(updatedItem)
     return this.requestResolver<void>(request)
-    .then(() => this.dataUpdateSubject.next(collectionName))
+    .then(() => this.dataUpdate$.next(collectionName))
   }
 
   

@@ -3,6 +3,7 @@ import IQuestion from "../../global/interfaces/question.interface";
 import ITag from "../../global/interfaces/tag.interface";
 import { CorrectnessRatings } from "../../global/types/correctness-rating";
 import { DataService } from '../data-service/data.service';
+import CollectionNames from '../../global/enums/collection-names.enum';
 
 export class QuestionService {
   private dataService: DataService
@@ -55,7 +56,7 @@ export class QuestionService {
 
     question.correctnessRating = qcr
     question.dateLastAsked = new Date()
-    this.dataService.update(question, 'Questions');
+    this.dataService.update(question, CollectionNames['Questions']);
   }
 }
 

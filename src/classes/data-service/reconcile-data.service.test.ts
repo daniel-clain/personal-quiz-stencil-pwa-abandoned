@@ -1,11 +1,11 @@
 import ReconcileDataService from "./reconcile-data.service";
 import IDataItem from "../../global/interfaces/data-item.interface";
 import IQuestion from "../../global/interfaces/question.interface";
-import FirestoreDbService from "../firestore-db-service/firestore-db.service";
+import RemoteDbService from "../remote-db-service/remote-db.service";
 import LocalDbService from "../local-db-service/local-db.service";
-import CollectionNames from "../../global/types/collection-names";
+import CollectionNames from '../../global/enums/collection-names.enum';
 
-class MockFirestoreDbService extends FirestoreDbService{
+class MockFirestoreDbService extends RemoteDbService{
   setup(): Promise<void>{return Promise.resolve()}
   addItem(): Promise<any>{
     return Promise.resolve('new id')
@@ -37,7 +37,7 @@ describe ('reconcileData()', () => {
       dateLastAsked: null,
       tags: []
     }
-    mockFirestoreDbService.getNewData = <T extends IDataItem>(collection: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<T[]> => {
+    mockFirestoreDbService.getUpdatedDataItemsSinceClientLastConnectedToRemoteDb = (collection: CollectionNames, dateClientLastConnectedToFirestore: Date): Promise<IDataItem[]> => {
       dateClientLastConnectedToFirestore
       if(collection == 'Questions'){
         return Promise.resolve([firestoreQuestion as any])
@@ -46,9 +46,9 @@ describe ('reconcileData()', () => {
         return Promise.resolve([])
       }
     }
-    test('should call getNewData in firestoreDbService with collection name Questions and dateClientLastConnectedToFirestore 2019-01-15', () => {
-      const getNewDataSpy = spyOn(mockFirestoreDbService, 'getNewData')
-      reconcileDataService.reconcileDataSinceLasteConnectedDate()
+    test('should call getNewData in remoteDbService with collection name Questions and dateClientLastConnectedToFirestore 2019-01-15', () => {
+      const getNewDataSpy = spyOn(mockFirestoreDbService, 'getUpdatedDataItemsSinceClientLastConnectedToRemoteDb')
+      reconcileDataService.synchronizeLocalAndRemoteData()
       expect(getNewDataSpy).toBeCalledWith('Questions', new Date("2019-01-15"))
 
     })

@@ -1,20 +1,21 @@
 
 import { User } from 'firebase';
-import CollectionNames from '../../global/types/collection-names'
 import { AuthService } from '../auth-service/auth.service';
 import { Subject, Observable, Subscriber, Subscription } from 'rxjs';
 import IDataItem from '../../global/interfaces/data-item.interface';
 import LocalDbService from '../local-db-service/local-db.service';
-import FirestoreDbService from '../firestore-db-service/firestore-db.service';
+import RemoteDbService from '../remote-db-service/remote-db.service';
 import ITag from '../../global/interfaces/tag.interface';
 import IQuestion from '../../global/interfaces/question.interface';
 import ReconcileDataService from './reconcile-data.service';
 import IInMemoryData from '../../global/interfaces/in-memory-data.interface';
+import CollectionNames from '../../global/enums/collection-names.enum'
+import getDateOneMonthAgo from './../../global/helper-functions/getDateOneMonthAgo'
 
 
 export class DataService{
 
-  connectionSubject: Subject<boolean> = new Subject()
+  clientConnectedToRemoteDb$: Subject<boolean> = new Subject()
   private connected: boolean
   private questions: IQuestion[] = []
   private tags: ITag[] = []
@@ -26,7 +27,7 @@ export class DataService{
   
   tags$: Observable<ITag[]>
   tagsDataSubscription: Subscription;
-  tagUpdates$: Subject<ITag[]> = new Subject();
+  tagUpdates$: Subject<ITag[]> = new Subject(); 
 
   questions$: Observable<IQuestion[]>
   questionsDataSubscription: Subscription;
@@ -34,7 +35,7 @@ export class DataService{
 
 
   constructor(     
-   private firestoreDbService: FirestoreDbService,
+   private remoteDbService: RemoteDbService,
    private localDbService: LocalDbService,
    private reconcileDataService: ReconcileDataService,
    private authService: AuthService
@@ -61,41 +62,30 @@ export class DataService{
   }
 
   async setup(){
-    await this.firestoreDbService.setup()
     await this.localDbService.setup()
     
     this.setupDataObservables()
+    this.getInitialData()
   }
 
   private setupDataObservables(){
-    this.localDbService.dataUpdateSubject.subscribe((collectionName: CollectionNames) => {
+    this.localDbService.dataUpdate$.subscribe((collectionName: CollectionNames) => {
       switch(collectionName){
         case 'Questions' : {
-          this.localDbService.getData<IQuestion[]>('Questions')
+          this.localDbService.getData<IQuestion[]>(CollectionNames['Questions'])
           .then((questions: IQuestion[]) => this.questionUpdates$.next(questions))          
         }; break
         case 'Tags' : {
-          this.localDbService.getData<ITag[]>('Tags')
+          this.localDbService.getData<ITag[]>(CollectionNames['Tags'])
           .then((tags: ITag[]) => this.tagUpdates$.next(tags))          
         }; break
       }
     })
 
-    this.localDbService.getData<IQuestion[]>('Questions')
-    .then((questions: IQuestion[]) => {
-      this.inMemory['Questions'] = questions
-      this.questionUpdates$.next(this.inMemory['Questions'])
-    })
-    
-    this.localDbService.getData<ITag[]>('Tags')
-    .then((tags: ITag[]) => {
-      this.inMemory['Tags'] = tags
-      this.tagUpdates$.next(this.inMemory['Tags'])
-    })
 
     this.authService.user$.subscribe(
       (user: User) => {
-        this.connectionSubject.next(!!user)
+        this.clientConnectedToRemoteDb$.next(!!user)
         if(!!user){
           this.connected = true
           this.onConnectionToFirestore()
@@ -106,11 +96,41 @@ export class DataService{
     )
   }
 
-
-  private onConnectionToFirestore(){    
-    this.reconcileDataService.reconcileDataSinceLasteConnectedDate()
-    .then(() => console.log('all data has been reconciled'))   
+  getInitialData(){
+    this.localDbService.getData<IQuestion[]>(CollectionNames['Questions'])
+    .then((questions: IQuestion[]) => this.questionUpdates$.next(questions))
+    
+    this.localDbService.getData<ITag[]>(CollectionNames['Tags'])
+    .then((tags: ITag[]) => this.tagUpdates$.next(tags))
   }
+
+
+  private async onConnectionToFirestore(){  
+    const neverConnectedToRemoteBefore = await this.localDbService.hasNeverConnectedToRemoteDbBefore()
+    const hasntConnectedToRemoteInOverAMonth = await this.localDbService.hasntConnectedToRemoteDbInOverAMonth()
+
+    if(neverConnectedToRemoteBefore || hasntConnectedToRemoteInOverAMonth){
+      this.overwriteLocalDbWithEverythingFromRemoteDb()
+    }
+    else{
+      this.deleteExpiredDataItemsMarkedForDelete()
+      this.reconcileDataService.synchronizeLocalAndRemoteData()
+    }
+  }
+
+  
+
+  private overwriteLocalDbWithEverythingFromRemoteDb(): Promise<void>{
+    return Promise.all([])
+    .then(() => console.log('all local data has been overwritten with remote data'))
+  }
+  private async deleteExpiredDataItemsMarkedForDelete(): Promise<void>{
+    const dataItemsMarkedForDelete: IDataItem[] = await this.localDbService.getDataMarkedForDelete()
+    const expiredDataItems: IDataItem[] = dataItemsMarkedForDelete.filter((dataItem: IDataItem) => dataItem.dateLastUpdated < getDateOneMonthAgo())
+    return Promise.resolve(1)
+    .then(numberOfItemsDeleted => console.log('number of expired items deleted: ', numberOfItemsDeleted))
+  }
+
 
 
   async add<T extends IDataItem>(data: T, collectionName: CollectionNames): Promise<void>{
@@ -118,7 +138,7 @@ export class DataService{
     let newId
     let tempId
     if(this.connected){
-      newId = await this.firestoreDbService.addItem<T>(data, collectionName)
+      newId = await this.remoteDbService.addItem<T>(data, collectionName)
       this.localDbService.updateDateClientLastConnectedToFirestore()
     } else {
       tempId = `temp${new Date().getTime().toString()}`
@@ -132,7 +152,7 @@ export class DataService{
   async update(data: IDataItem, collectionName: CollectionNames): Promise<void>{
     data.dateLastUpdated = new Date()
     if(this.connected){
-      this.firestoreDbService.updateItem(data, collectionName)
+      this.remoteDbService.updateItem(data, collectionName)
       this.localDbService.updateDateClientLastConnectedToFirestore()
     }
     return this.localDbService.updateItem(data, collectionName)
@@ -141,7 +161,7 @@ export class DataService{
   async delete(data: IDataItem, collectionName: CollectionNames): Promise<void>{
     const promiseArray: Promise<void>[] = []
     if(this.connected){
-      promiseArray.push(this.firestoreDbService.deleteItem(data, collectionName))
+      promiseArray.push(this.remoteDbService.deleteItem(data, collectionName))
       promiseArray.push(this.localDbService.updateDateClientLastConnectedToFirestore())
       promiseArray.push(this.localDbService.deleteItem(data, collectionName)) 
     }  

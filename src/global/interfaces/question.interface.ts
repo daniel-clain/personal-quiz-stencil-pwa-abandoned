@@ -9,4 +9,5 @@ export default interface IQuestion extends IDataItem{
   dateLastAsked: Date
   dateLastUpdated: Date
   tags: ITag[]
+  
 }

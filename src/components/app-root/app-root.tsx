@@ -1,7 +1,7 @@
 import { Component, State, Listen } from '@stencil/core';
 import { Views } from '../../global/types/views';
 import { DataService } from '../../classes/data-service/data.service';
-import FirestoreDbService from '../../classes/firestore-db-service/firestore-db.service';
+import RemoteDbService from '../../classes/remote-db-service/remote-db.service';
 import LocalDbService from '../../classes/local-db-service/local-db.service';
 import ReconcileDataService from '../../classes/data-service/reconcile-data.service';
 import { AuthService } from '../../classes/auth-service/auth.service';
@@ -30,10 +30,10 @@ export class AppRoot {
       }
     )
     this.authService = new AuthService()
-    const firestoreDbService = new FirestoreDbService(this.authService)
+    const remoteDbService = new RemoteDbService(this.authService)
     const localDbService = new LocalDbService()
-    const reconcileDataService = new ReconcileDataService(firestoreDbService, localDbService)
-    this.dataService = new DataService(firestoreDbService, localDbService, reconcileDataService, this.authService)
+    const reconcileDataService = new ReconcileDataService(remoteDbService, localDbService)
+    this.dataService = new DataService(remoteDbService, localDbService, reconcileDataService, this.authService)
     this.dataService.setup()
   }
 
