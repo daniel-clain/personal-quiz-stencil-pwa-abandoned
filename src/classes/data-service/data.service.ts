@@ -10,8 +10,6 @@ import IQuestion from '../../global/interfaces/question.interface';
 import ReconcileDataService from './reconcile-data.service';
 import IInMemoryData from '../../global/interfaces/in-memory-data.interface';
 import CollectionNames from '../../global/enums/collection-names.enum'
-import getDateOneMonthAgo from './../../global/helper-functions/getDateOneMonthAgo'
-import firebase from 'firebase';
 
 
 export class DataService{
@@ -85,7 +83,7 @@ export class DataService{
 
     this.authService.user$.subscribe((user: User) => {
       this.connected = !!user
-      if(this.connected) this.onConnectionToFirestore()
+      if(this.connected) this.onConnectionToRemoteDb()
     })
   }
 
@@ -96,31 +94,17 @@ export class DataService{
     this.localDbService.getData<ITag[]>(CollectionNames['Tags'])
     .then((tags: ITag[]) => this.tagUpdates$.next(tags))
   }
-
-
-  private async onConnectionToFirestore(){  
-    const neverConnectedToRemoteBefore = await this.localDbService.hasNeverConnectedToRemoteDbBefore()
-    const noLocalDataChangesInOverAMonth = await this.localDbService.hasNoDataChangesInOverAMonth()
-    const hasConnectedToRemoteWithinTheLastMonth = await this.localDbService.hasConnectedToRemoteWithinTheLastMonth()
-
-    if(neverConnectedToRemoteBefore){
-      this.addEverythingFromRemoteDbToLocalDb()
+  private onConnectionToRemoteDb(){
+    this.reconcileDataService.synchronizeRemoteAndLocalDataSinceLastConnected()
+    if(this.overAMonthSinceLastConnectedToRemoteDb()){
+      this.reconcileDataService.synchronizeRemoteAndLocalDataBeforeLastConnected()
     }
-
-    if(hasConnectedToRemoteWithinTheLastMonth){
-      this.reconcileDataService.synchronizeLocalAndRemoteData()
-    }
-    else {
-      this.reconcileDataService.synchronizeLocalAndRemoteData()
-
-    }
-
-    this.deleteExpiredDataItemsMarkedForDelete()
   }
-
   
+  overAMonthSinceLastConnectedToRemoteDb():boolean{return}
 
-  private addEverythingFromRemoteDbToLocalDb(): Promise<void>{
+
+  /* private addEverythingFromRemoteDbToLocalDb(): Promise<void>{
     const deletePromises: Promise<any>[] = []
     const addPromises: Promise<any>[] = []
     for(let key in CollectionNames){
@@ -137,30 +121,7 @@ export class DataService{
     .then(() => Promise.all(addPromises))
     .then(() => this.localDbService.updateDateClientLastConnectedToFirestore())
     .then(() => console.log('all local data has been overwritten with remote data'))
-  }
-
-  private async deleteExpiredDataItemsMarkedForDelete(): Promise<void>{
-    const collectionPromises: Promise<any>[] = []
-    for(let key in CollectionNames){
-      const collectionName: CollectionNames = CollectionNames[CollectionNames[key]]
-      const dataItemsMarkedForDelete: any[] = await this.localDbService.getDataMarkedForDelete(collectionName)
-      const expiredDataItems: IDataItem[] = dataItemsMarkedForDelete.filter((dataItem: any) => {
-        const convertedOneMonthAgo: firebase.firestore.Timestamp = firebase.firestore.Timestamp.fromDate(getDateOneMonthAgo())
-        const x: firebase.firestore.Timestamp = dataItem.dateLastUpdated
-        const itemLastUpdateDate: firebase.firestore.Timestamp =  new firebase.firestore.Timestamp(x.seconds, x.nanoseconds)
-        return itemLastUpdateDate < convertedOneMonthAgo
-      })
-      collectionPromises.push(Promise.all(        
-        expiredDataItems.map((dataItem: IDataItem) => Promise.all([
-          this.localDbService.deleteItem(dataItem, collectionName),
-          this.remoteDbService.deleteItem(dataItem, collectionName)
-        ]))
-      ))
-    }
-    return Promise.all(collectionPromises)
-    .then((promiseResponses) => promiseResponses.reduce((combined: any[], promiseResponse: IDataItem[]) => combined.concat(promiseResponse), []))
-    .then(itemsDeleted => console.log('number of expired items deleted: ',itemsDeleted.length))
-  }
+  } */
 
 
 

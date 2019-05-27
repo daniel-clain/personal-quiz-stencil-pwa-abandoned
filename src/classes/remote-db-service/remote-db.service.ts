@@ -50,17 +50,24 @@ export default class RemoteDbService implements IRemoteDbService{
       })
     })
   }
+
   
   async getDataById<T extends IDataItem>(id: string, collectionName: CollectionNames): Promise<T> {
     const collection: firestore.CollectionReference = await this.getUserCollection().collection(collectionName.toString())
     return collection.doc(id).get()
     .then((documentSnapshot: firestore.DocumentSnapshot) => {
       const data = documentSnapshot.data()
-        data.dateLastUpdated = data.dateLastUpdated.toDate()
-        if(collectionName == 'Questions' && data.dateLastAsked){
-          data.dateLastUpdated = data.dateLastAsked.toDate()
-        }
-        return {...data, id: documentSnapshot.id} as T
+      if(!data.dateLastUpdated){
+        const msg = 'got data by id but returned document had no dateLastUpdated field, returning null'
+        console.log(msg, data, documentSnapshot.id);
+        alert(msg)
+        return null
+      }
+      data.dateLastUpdated = data.dateLastUpdated.toDate()
+      if(collectionName == 'Questions' && data.dateLastAsked){
+        data.dateLastUpdated = data.dateLastAsked.toDate()
+      }
+      return {...data, id: documentSnapshot.id} as T
     })
   }
 

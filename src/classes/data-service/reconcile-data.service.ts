@@ -5,13 +5,50 @@ import FirestoreDocId from "../../global/types/firestore-doc-id.type";
 import IConflictingDataItem from '../../global/interfaces/conflicting-data-item.interface';
 import INonConflictingDataItems from '../../global/interfaces/non-conflicting-data-items.interface';
 import CollectionNames from '../../global/enums/collection-names.enum';
+import firebase from "firebase";
+import getDateOneMonthAgo from "../../global/helper-functions/getDateOneMonthAgo";
 
 
 export default class ReconcileDataService{
 
   constructor(private remoteDbService: RemoteDbService, private localDbService: LocalDbService,){}
 
-  async synchronizeLocalAndRemoteData(): Promise<void>{
+
+  synchronizeRemoteAndLocalDataBeforeLastConnected(): Promise<void>{
+    let collectionPromises: Promise<void>[] = []
+    
+    for(let key in CollectionNames){
+      const collectionName: CollectionNames = CollectionNames[CollectionNames[key]]
+      collectionPromises.push(      
+        this.localDbService.allDataThatHasntBeenUpdatedSinceLastConnected(collectionName)
+        .then((localDataItems: IDataItem[]) => 
+          Promise.all(localDataItems.map(async (localDataItem: IDataItem): Promise<void> => 
+            this.remoteDbService.getDataById(localDataItem.id, collectionName)
+            .then((reomoteDataItem: IDataItem) => {
+              if(!reomoteDataItem){
+                const msg = 'this data items exists in local but not in remote, the only way this could be possible is if it was marked for delete and expired by another client, or if the data in the remote db was manually delete. investigate this and determine the cause. for now local item will be deleted'
+                console.log(msg, localDataItem);
+                alert(msg)
+                return this.localDbService.deleteItem(localDataItem, collectionName)
+              }
+              else{
+                const conflictingDataItem: IConflictingDataItem = {
+                  local: localDataItem,
+                  remote: reomoteDataItem
+                }
+                return this.resolveConflictingDataItems([conflictingDataItem], collectionName)
+              }   
+            })
+          )).then(() => Promise.resolve())
+        )
+      )
+    }    
+    return Promise.all(collectionPromises).then(() => this.deleteExpiredDataItemsMarkedForDelete())
+  }
+  
+
+
+  async synchronizeRemoteAndLocalDataSinceLastConnected(): Promise<void>{
     const dateClientLastConnectedToRemoteDb: Date = await this.localDbService.getDateLastConnectedToRemoteDb()
     const collectionPromises: Promise<void>[] = []
     for(let key in CollectionNames){
@@ -36,6 +73,31 @@ export default class ReconcileDataService{
     .then(() => this.localDbService.updateDateClientLastConnectedToFirestore())
     .then(() => console.log('all local and remote data has been synchronized'))
   }
+
+  
+  private async deleteExpiredDataItemsMarkedForDelete(): Promise<void>{
+    const collectionPromises: Promise<any>[] = []
+    for(let key in CollectionNames){
+      const collectionName: CollectionNames = CollectionNames[CollectionNames[key]]
+      const dataItemsMarkedForDelete: any[] = await this.localDbService.getDataMarkedForDelete(collectionName)
+      const expiredDataItems: IDataItem[] = dataItemsMarkedForDelete.filter((dataItem: any) => {
+        const convertedOneMonthAgo: firebase.firestore.Timestamp = firebase.firestore.Timestamp.fromDate(getDateOneMonthAgo())
+        const x: firebase.firestore.Timestamp = dataItem.dateLastUpdated
+        const itemLastUpdateDate: firebase.firestore.Timestamp =  new firebase.firestore.Timestamp(x.seconds, x.nanoseconds)
+        return itemLastUpdateDate < convertedOneMonthAgo
+      })
+      collectionPromises.push(Promise.all(        
+        expiredDataItems.map((dataItem: IDataItem) => Promise.all([
+          this.localDbService.deleteItem(dataItem, collectionName),
+          this.remoteDbService.deleteItem(dataItem, collectionName)
+        ]))
+      ))
+    }
+    return Promise.all(collectionPromises)
+    .then((promiseResponses) => promiseResponses.reduce((combined: any[], promiseResponse: IDataItem[]) => combined.concat(promiseResponse), []))
+    .then(itemsDeleted => console.log('number of expired items deleted: ',itemsDeleted.length))
+  }
+
 
   private getConflictingDataItems<T extends IDataItem>(localDataItems: T[], remoteDataItems: T[]): IConflictingDataItem[]{
     const conflictingDataItems: IConflictingDataItem[] = []
@@ -80,7 +142,7 @@ export default class ReconcileDataService{
       else {
         return this.localDbService.updateItem(remote, collectionName)
       }
-    }))
+    })).then(() => Promise.resolve())
   }
 
   private resolveNonConflictingDataItems(nonConflictingDataItems: INonConflictingDataItems, collectionName: CollectionNames){

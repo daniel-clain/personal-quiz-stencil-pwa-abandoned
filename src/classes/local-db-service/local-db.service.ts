@@ -53,9 +53,32 @@ export default class LocalDbService implements ILocalDbService{
       console.log('empty dateLastConnectedToFirestoreField initialized')
     })
   } 
+  async allDataThatHasntBeenUpdatedSinceLastConnected(collectionName: CollectionNames): Promise<IDataItem[]>{
+    const dateLastConnectedToRemoteDb: Date = await this.getDateLastConnectedToRemoteDb()
+    const keyRangeValue = IDBKeyRange.upperBound(dateLastConnectedToRemoteDb, true);
+      const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+      const dateLastUpdatedIndex = objectStore.index('dateLastUpdated');
+      const request: IDBRequest = dateLastUpdatedIndex.openCursor(keyRangeValue)
 
-  async getUpdatedDataItemsSinceClientLastConnectedToRemoteDb(collectionName: CollectionNames, dateClientLastConnectedToRemoteDb: Date): Promise<IDataItem[]>{
-    const keyRangeValue = IDBKeyRange.lowerBound(dateClientLastConnectedToRemoteDb, true);
+      return new Promise((resolve, reject) => {   
+        const returnDataArray: IDataItem[] = []
+        request.onsuccess = (event: any) => {
+          const cursor: IDBCursorWithValue = event.target.result;
+          if(cursor) {
+            const dataItem: IDataItem = cursor.value
+            returnDataArray.push(dataItem)
+            cursor.continue();
+          }
+          else{
+            resolve(returnDataArray)
+          }
+        }
+        request.onerror = error => reject(error)
+      })
+  }
+
+  async getUpdatedDataItemsSinceClientLastConnectedToRemoteDb(collectionName: CollectionNames, dateLastConnectedToRemoteDb: Date): Promise<IDataItem[]>{
+    const keyRangeValue = IDBKeyRange.lowerBound(dateLastConnectedToRemoteDb, true);
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const dateLastUpdatedIndex = objectStore.index('dateLastUpdated');
     const request: IDBRequest = dateLastUpdatedIndex.openCursor(keyRangeValue)
