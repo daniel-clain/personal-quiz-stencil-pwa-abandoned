@@ -20,6 +20,12 @@ import {
 import {
   DataService,
 } from './classes/data-service/data.service';
+import {
+  QuestionService,
+} from './classes/question-service/question.service';
+import {
+  QuizGenertator,
+} from './classes/quiz-generator/quiz-generator';
 
 
 export namespace Components {
@@ -44,9 +50,13 @@ export namespace Components {
 
   interface QuizComponent {
     'dataService': DataService;
+    'questionService': QuestionService;
+    'quizGenerator': QuizGenertator;
   }
   interface QuizComponentAttributes extends StencilHTMLAttributes {
     'dataService'?: DataService;
+    'questionService'?: QuestionService;
+    'quizGenerator'?: QuizGenertator;
   }
 
   interface TagsComponent {

@@ -38,20 +38,20 @@ export class QuestionsComponent {
 
 
   addQuestion(){
-    if(!this.questionValidation()) return
+    if(!this.questionValidation(this.newQuestion)) return
     
     this.dataService.add<IQuestion>(this.newQuestion, CollectionNames['Questions'])
     this.resetNewQuestion()
   }
 
-  questionValidation(): boolean{
+  questionValidation(question: IQuestion): boolean{
     
-    if(!this.newQuestion.value || this.newQuestion.value == ''){
-      console.log('can not submit new question because value is empty');
+    if(!question.value || question.value == ''){
+      alert('can not submit new question because value is empty');
       return
     }
-    if(!this.newQuestion.correctAnswer || this.newQuestion.correctAnswer == ''){
-      console.log('can not submit new question because correct answer is empty');
+    if(!question.correctAnswer || question.correctAnswer == ''){
+      alert('can not submit new question because correct answer is empty');
       return
     }
     return true
@@ -65,7 +65,7 @@ export class QuestionsComponent {
   }
 
   updateQuestion(){    
-    if(!this.questionValidation()) return
+    if(!this.questionValidation(this.selectedQuestion)) return
     this.dataService.update(this.selectedQuestion, CollectionNames['Questions'])
     this.selectQuestion(null)
   }

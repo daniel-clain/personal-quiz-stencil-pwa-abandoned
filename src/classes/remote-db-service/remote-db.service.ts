@@ -41,7 +41,12 @@ export default class RemoteDbService implements IRemoteDbService{
     .then((querySnapshot: firestore.QuerySnapshot) => querySnapshot.docs)
     .then((queryDocumentSnapshot: firestore.QueryDocumentSnapshot[]) => {
       return queryDocumentSnapshot.map((snapshot: firestore.QueryDocumentSnapshot) => {
-        return {...snapshot.data(), id: snapshot.id} as IDataItem
+        const data = snapshot.data()
+        data.dateLastUpdated = data.dateLastUpdated.toDate()
+        if(collectionName == 'Questions' && data.dateLastAsked){
+          data.dateLastUpdated = data.dateLastAsked.toDate()
+        }
+        return {...data, id: snapshot.id} as IDataItem
       })
     })
   }
@@ -50,7 +55,12 @@ export default class RemoteDbService implements IRemoteDbService{
     const collection: firestore.CollectionReference = await this.getUserCollection().collection(collectionName.toString())
     return collection.doc(id).get()
     .then((documentSnapshot: firestore.DocumentSnapshot) => {
-      return {...documentSnapshot.data(), id: documentSnapshot.id} as T
+      const data = documentSnapshot.data()
+        data.dateLastUpdated = data.dateLastUpdated.toDate()
+        if(collectionName == 'Questions' && data.dateLastAsked){
+          data.dateLastUpdated = data.dateLastAsked.toDate()
+        }
+        return {...data, id: documentSnapshot.id} as T
     })
   }
 

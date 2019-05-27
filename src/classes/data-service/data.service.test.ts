@@ -8,18 +8,21 @@ import { User } from 'firebase';
 import ReconcileDataService from './reconcile-data.service';
 import CollectionNames from '../../global/enums/collection-names.enum';
 
-class MockFirestoreDbService extends RemoteDbService{
+class MockRemoteDbService extends RemoteDbService{
   setup(): Promise<void>{return Promise.resolve()}
   addItem(): Promise<any>{
     return Promise.resolve('new id')
   }
 }
 
-const mockFirestoreDbService: MockFirestoreDbService = new MockFirestoreDbService(null)
+const mockFirestoreDbService: MockRemoteDbService = new MockRemoteDbService(null)
 
 
 class MockLocalDbService extends LocalDbService{
   setup(): Promise<void>{return Promise.resolve()}
+  hasNeverConnectedToRemoteDbBefore(): Promise<boolean>{
+    return Promise.resolve(true)
+  }
   addItem(): Promise<any>{
     return Promise.resolve()
   }
@@ -45,9 +48,24 @@ class MockReconcileDataService extends ReconcileDataService{
 
 const mockReconcileDataService: MockReconcileDataService = new MockReconcileDataService(mockFirestoreDbService, mockLocalDbService)
 
+
+const dataServiceInstance: DataService = new DataService(mockFirestoreDbService, mockLocalDbService, mockReconcileDataService, mockAuthService)
+
+describe ('dataService', () => {
+  describe ('when connected to remote db', () => {
+    describe ('when local db has been setup and it has connected within the last month', () => {
+      mockLocalDbService.hasNeverConnectedToRemoteDbBefore = jest.fn().mockResolvedValue(true)
+      describe ('when setup() is run', () => {
+        dataServiceInstance.setup()
+        expect(mockLocalDbService.hasNeverConnectedToRemoteDbBefore).toBeCalled()
+        
+      });
+    });
+  });
+});
+
 describe ('add()', () => {
   describe ('when connected to firestore', () => {
-    const dataServiceInstance: DataService = new DataService(mockFirestoreDbService, mockLocalDbService, mockReconcileDataService, mockAuthService)
 
     describe ('when adding a valid question', async () => {
       const testQuestion: IQuestion = {

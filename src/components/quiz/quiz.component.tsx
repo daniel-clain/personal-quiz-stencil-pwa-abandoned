@@ -10,20 +10,18 @@ import { DataService } from '../../classes/data-service/data.service';
 @Component({ tag: 'quiz-component' })
 export class QuizComponent {
   @Prop() dataService: DataService
+  @Prop() questionService: QuestionService
+  @Prop() quizGenerator: QuizGenertator
   @State() activeQuiz: IQuiz
-  private questionsInQuiz: number
-  private questionService: QuestionService
   @State() tags: ITag[]
   @State() questions: IQuestion[]
   @State() quizTags: ITag[] = []
   @State() notEnoughQuestions: boolean = false
-  private quizGenerator: QuizGenertator
+  private questionsInQuiz: number
 
   componentWillLoad() {
-    this.questionService = new QuestionService(this.dataService)
     this.dataService.tags$.subscribe((tags: ITag[]) => this.tags = tags)
     this.dataService.questions$.subscribe((questions: IQuestion[]) => this.questions = questions)
-    this.quizGenerator = new QuizGenertator(this.questionService)
     this.questionsInQuiz = this.quizGenerator.questionsInQuiz
   }
   toggleQuizTag(tag: ITag){

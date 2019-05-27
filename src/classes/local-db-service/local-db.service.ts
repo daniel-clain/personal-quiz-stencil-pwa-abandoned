@@ -4,7 +4,6 @@ import ILocalDbService from "../../global/interfaces/local-db-service.interface"
 import IDataItem from '../../global/interfaces/data-item.interface';
 import { Subject } from "rxjs";
 import CollectionNames from '../../global/enums/collection-names.enum';
-import getDateOneMonthAgo from './../../global/helper-functions/getDateOneMonthAgo'
 
 export default class LocalDbService implements ILocalDbService{
 
@@ -82,10 +81,39 @@ export default class LocalDbService implements ILocalDbService{
     return dateLastConnectedToRemoteDb == null
   }
 
-  async hasntConnectedToRemoteDbInOverAMonth(): Promise<boolean> {
+  async hasNoDataChangesInOverAMonth(): Promise<boolean> {
+    const collectionPromises: Promise<IDataItem[]>[] = []
+    for(let key in CollectionNames){
+      const collectionName: CollectionNames = CollectionNames[CollectionNames[key]]
+      const objectStore: IDBObjectStore = this.getObjectStore(collectionName)      
+      const request: IDBRequest = objectStore.getAll()
+      
+      collectionPromises.push(this.requestResolver<IDataItem[]>(request))
+    }
+    return Promise.all(collectionPromises)
+    .then(promiseResponses => {
+      const combinedDataItems: IDataItem[] = promiseResponses.reduce((combined: any[], promiseResponse: IDataItem[]) => combined.concat(promiseResponse), [])
+      const allDataItemsAreOveAMonthOld = combinedDataItems.reduce(
+        (allDataItemsAreOveAMonthOld: boolean, dataItem: IDataItem) => {
+          const oneMonthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1))//getDateOneMonthAgo()
+          if(dataItem.dateLastUpdated > oneMonthAgo){
+            allDataItemsAreOveAMonthOld = false
+          }
+          return allDataItemsAreOveAMonthOld
+        }, true)
+      /* 
+      return dateLastConnectedToRemoteDb == null || dateLastConnectedToRemoteDb < oneMonthAgo */
+      return allDataItemsAreOveAMonthOld
+    })
+  }
+
+  async hasConnectedToRemoteWithinTheLastMonth(): Promise<boolean> {
     const dateLastConnectedToRemoteDb: Date = await this.getDateLastConnectedToRemoteDb()
-    const oneMonthAgo = getDateOneMonthAgo()
-    return dateLastConnectedToRemoteDb == null || dateLastConnectedToRemoteDb < oneMonthAgo
+    const oneMonthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1))//getDateOneMonthAgo()
+    if(dateLastConnectedToRemoteDb == null){
+      return false
+    }
+    return dateLastConnectedToRemoteDb > oneMonthAgo
   }
 
 
@@ -127,31 +155,20 @@ export default class LocalDbService implements ILocalDbService{
       .objectStore(collectionName.toString())
   }
 
-  getDataMarkedForDelete(): Promise<IDataItem[]>{
-    const collectionPromises: Promise<IDataItem[]>[] = []
-    for(let key in CollectionNames){
-      const collectionName: CollectionNames = CollectionNames[CollectionNames[key]]
-      const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
-      const markedForDeleteIndex = objectStore.index('markedForDelete');
-      const request: IDBRequest = markedForDeleteIndex.openCursor()
-      collectionPromises.push(new Promise((resolve, reject) => {      
-        const returnDataArray: IDataItem[] = []
-        request.onsuccess = (event: any) => {
-          const cursor: IDBCursorWithValue = event.target.result;
-          if(cursor) {
-            const dataItem: IDataItem = cursor.value
-            returnDataArray.push(dataItem)
-            cursor.continue();
-          }
-          else{
-            resolve(returnDataArray)
-          }
-        }
-        request.onerror = error => reject(error)
-      }))
-    }
-    return Promise.all(collectionPromises)
-    .then((promiseResponses) => promiseResponses.reduce((returnDataItems: IDataItem[], promiseResponse: IDataItem[]) => returnDataItems.concat(promiseResponse), []))
+  getDataMarkedForDelete(collectionName: CollectionNames): Promise<any[]>{
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const request: IDBRequest = objectStore.getAll()
+    return new Promise((resolve, reject) => {
+      request.onsuccess = (event: any) => resolve(event.target.result.filter((dataItem: any) => dataItem.markedForDelete))
+      request.onerror = error => reject(error)
+    })
+  }
+
+  deleteAll(collectionName: CollectionNames){
+    const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
+    const range: IDBKeyRange = IDBKeyRange.lowerBound('', true)
+    const request: IDBRequest = objectStore.delete(range)
+    return this.requestResolver(request)
   }
 
   

@@ -57,6 +57,7 @@ export class TagsComponent {
   updateTagName(event){
     this.newTag.value = event.path[0].value
   }
+  
 
   render() {
     return (

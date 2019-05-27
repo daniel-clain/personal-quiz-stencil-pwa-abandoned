@@ -58,9 +58,6 @@ describe ('reconcileData()', () => {
 
 
 
-
-
-
   /* describe ('when local data has 1 item and remote is 0', () => {
     
     const localDataItem: IDataItem = {
