@@ -1,17 +1,18 @@
 import IDataItem from "../../global/interfaces/data-item.interface";
-import RemoteDbService from "../remote-db-service/remote-db.service";
-import LocalDbService from "../local-db-service/local-db.service";
 import FirestoreDocId from "../../global/types/firestore-doc-id.type";
 import IConflictingDataItem from '../../global/interfaces/conflicting-data-item.interface';
 import INonConflictingDataItems from '../../global/interfaces/non-conflicting-data-items.interface';
 import CollectionNames from '../../global/enums/collection-names.enum';
 import firebase from "firebase";
 import getDateOneMonthAgo from "../../global/helper-functions/getDateOneMonthAgo";
+import IReconcileDataService from "../../global/interfaces/reconcile-data-service.interface";
+import IRemoteDbService from "../../global/interfaces/remote-db-service.interface";
+import ILocalDbService from "../../global/interfaces/local-db-service.interface";
 
 
-export default class ReconcileDataService{
+export default class ReconcileDataService implements IReconcileDataService{
 
-  constructor(private remoteDbService: RemoteDbService, private localDbService: LocalDbService,){}
+  constructor(private remoteDbService: IRemoteDbService, private localDbService: ILocalDbService){}
 
 
   synchronizeRemoteAndLocalDataBeforeLastConnected(): Promise<void>{

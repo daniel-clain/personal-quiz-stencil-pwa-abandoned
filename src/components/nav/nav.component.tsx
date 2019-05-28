@@ -1,5 +1,5 @@
 import { Component, State, Event, EventEmitter, Prop } from '@stencil/core';
-import { AuthService } from '../../classes/auth-service/auth.service';
+import { AuthService } from "../../classes/auth-service/AuthService";
 import { User } from 'firebase';
 import { Views } from '../../global/types/views';
 

@@ -2,10 +2,10 @@ import IDataItem from "../../global/interfaces/data-item.interface";
 import { User, firestore } from "firebase";
 import firebase from "firebase/app";
 import 'firebase/firestore'
-import { AuthService } from "../auth-service/auth.service";
 import IRemoteDbService from "../../global/interfaces/remote-db-service.interface";
 import FirestoreDocId from "../../global/types/firestore-doc-id.type";
 import CollectionNames from '../../global/enums/collection-names.enum';
+import { IAuthService } from "../../global/interfaces/auth-service.interface";
 
 
 
@@ -14,7 +14,7 @@ export default class RemoteDbService implements IRemoteDbService{
   private firestore: firestore.Firestore
   private user: User
   
-  constructor(private authService: AuthService){
+  constructor(private authService: IAuthService){
     this.setup()
   }
 

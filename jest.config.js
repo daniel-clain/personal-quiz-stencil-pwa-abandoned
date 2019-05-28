@@ -7,7 +7,7 @@ module.exports = {
   testPathIgnorePatterns: ["/lib/", "/node_modules/"],
   moduleFileExtensions: ["ts", "js", "jsx", "json", "node"],
   preset: "ts-jest",
-  rootDir: "./src/classes",
+  rootDir: "./src",
   verbose: true,
   setupFilesAfterEnv: ["expect-puppeteer"]
 }

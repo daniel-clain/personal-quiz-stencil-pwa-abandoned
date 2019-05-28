@@ -151,19 +151,19 @@ export default class LocalDbService implements ILocalDbService{
     }); 
   } 
 
-  getData<T>(collectionName: CollectionNames): Promise<T>{
+  getData(collectionName: CollectionNames): Promise<IDataItem[]>{
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const request: IDBRequest = objectStore.getAll()
     return new Promise((resolve, reject) => {
       request.onsuccess = (event: any) => {
-        const filteredData: T = event.target.result.filter(dataItem => !dataItem.markedForDelete)
+        const filteredData: IDataItem[] = event.target.result.filter(dataItem => !dataItem.markedForDelete)
         resolve(filteredData)
       }
       request.onerror = error => reject(error)
     });
   }
 
-  async updateDateClientLastConnectedToFirestore(){
+  async updateDateClientLastConnectedToFirestore(): Promise<void>{
     const newDateObj = {id: 'default', dateLastConnectedToFirestore: new Date()}
     const request: IDBRequest = this.localDatabase
     .transaction(['Date Last Connected To Firestore'], 'readwrite')
@@ -178,11 +178,11 @@ export default class LocalDbService implements ILocalDbService{
       .objectStore(collectionName.toString())
   }
 
-  getDataMarkedForDelete(collectionName: CollectionNames): Promise<any[]>{
+  getDataMarkedForDelete(collectionName: CollectionNames): Promise<IDataItem[]>{
     const objectStore: IDBObjectStore = this.getObjectStore(collectionName)
     const request: IDBRequest = objectStore.getAll()
     return new Promise((resolve, reject) => {
-      request.onsuccess = (event: any) => resolve(event.target.result.filter((dataItem: any) => dataItem.markedForDelete))
+      request.onsuccess = (event: any) => resolve(event.target.result.filter((dataItem: IDataItem) => dataItem.markedForDelete))
       request.onerror = error => reject(error)
     })
   }

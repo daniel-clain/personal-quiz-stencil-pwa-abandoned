@@ -10,7 +10,7 @@ import '@stencil/core';
 
 import {
   AuthService,
-} from './classes/auth-service/auth.service';
+} from './classes/auth-service/AuthService';
 import {
   EventEmitter,
 } from '@stencil/core';

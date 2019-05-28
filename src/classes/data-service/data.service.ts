@@ -1,15 +1,15 @@
 
 import { User} from 'firebase';
-import { AuthService } from '../auth-service/auth.service';
 import { Subject, Observable, Subscriber, Subscription } from 'rxjs';
 import IDataItem from '../../global/interfaces/data-item.interface';
-import LocalDbService from '../local-db-service/local-db.service';
-import RemoteDbService from '../remote-db-service/remote-db.service';
 import ITag from '../../global/interfaces/tag.interface';
 import IQuestion from '../../global/interfaces/question.interface';
-import ReconcileDataService from './reconcile-data.service';
 import IInMemoryData from '../../global/interfaces/in-memory-data.interface';
 import CollectionNames from '../../global/enums/collection-names.enum'
+import IRemoteDbService from '../../global/interfaces/remote-db-service.interface';
+import ILocalDbService from '../../global/interfaces/local-db-service.interface';
+import { IAuthService } from '../../global/interfaces/auth-service.interface';
+import IReconcileDataService from '../../global/interfaces/reconcile-data-service.interface';
 
 
 export class DataService{
@@ -33,10 +33,10 @@ export class DataService{
 
 
   constructor(     
-   private remoteDbService: RemoteDbService,
-   private localDbService: LocalDbService,
-   private reconcileDataService: ReconcileDataService,
-   private authService: AuthService
+   private remoteDbService: IRemoteDbService,
+   private localDbService: ILocalDbService,
+   private reconcileDataService: IReconcileDataService,
+   private authService: IAuthService
   ){
     
     this.questions$ = new Observable((subscriber: Subscriber<IQuestion[]>) => {
@@ -59,22 +59,24 @@ export class DataService{
     })
   }
 
-  async setup(){
-    await this.localDbService.setup()
-    
-    this.setupDataObservables()
-    this.getInitialData()
+  setup(): Promise<void>{
+    return this.localDbService.setup()
+    .then(() => {      
+      this.setupDataObservables()
+      return this.getInitialData()
+    })
   }
+
 
   private setupDataObservables(){
     this.localDbService.dataUpdate$.subscribe((collectionName: CollectionNames) => {
       switch(collectionName){
         case 'Questions' : {
-          this.localDbService.getData<IQuestion[]>(CollectionNames['Questions'])
+          this.localDbService.getData(CollectionNames['Questions'])
           .then((questions: IQuestion[]) => this.questionUpdates$.next(questions))          
         }; break
         case 'Tags' : {
-          this.localDbService.getData<ITag[]>(CollectionNames['Tags'])
+          this.localDbService.getData(CollectionNames['Tags'])
           .then((tags: ITag[]) => this.tagUpdates$.next(tags))          
         }; break
       }
@@ -87,12 +89,13 @@ export class DataService{
     })
   }
 
-  getInitialData(){
-    this.localDbService.getData<IQuestion[]>(CollectionNames['Questions'])
-    .then((questions: IQuestion[]) => this.questionUpdates$.next(questions))
-    
-    this.localDbService.getData<ITag[]>(CollectionNames['Tags'])
-    .then((tags: ITag[]) => this.tagUpdates$.next(tags))
+  private getInitialData(): Promise<void>{
+    return Promise.all([
+      this.localDbService.getData(CollectionNames['Questions'])
+      .then((questions: IQuestion[]) => this.questionUpdates$.next(questions)),    
+      this.localDbService.getData(CollectionNames['Tags'])
+      .then((tags: ITag[]) => this.tagUpdates$.next(tags))
+    ]).then(() => {})
   }
   private onConnectionToRemoteDb(){
     this.reconcileDataService.synchronizeRemoteAndLocalDataSinceLastConnected()

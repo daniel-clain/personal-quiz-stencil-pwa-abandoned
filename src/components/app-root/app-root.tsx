@@ -4,7 +4,7 @@ import { DataService } from '../../classes/data-service/data.service';
 import RemoteDbService from '../../classes/remote-db-service/remote-db.service';
 import LocalDbService from '../../classes/local-db-service/local-db.service';
 import ReconcileDataService from '../../classes/data-service/reconcile-data.service';
-import { AuthService } from '../../classes/auth-service/auth.service';
+import { AuthService } from "../../classes/auth-service/AuthService";
 import firebase from 'firebase/app';
 import { QuestionService } from '../../classes/question-service/question.service';
 import { QuizGenertator } from '../../classes/quiz-generator/quiz-generator';
@@ -41,6 +41,7 @@ export class AppRoot {
     this.questionService = new QuestionService(this.dataService)
     this.quizGenerator = new QuizGenertator(this.questionService)
     this.dataService.setup()
+    .then(() => console.log('DING! data service is setup !!');)
   }
 
   render() {

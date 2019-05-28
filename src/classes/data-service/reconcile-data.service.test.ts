@@ -48,7 +48,7 @@ describe ('reconcileData()', () => {
     }
     test('should call getNewData in remoteDbService with collection name Questions and dateClientLastConnectedToFirestore 2019-01-15', () => {
       const getNewDataSpy = spyOn(mockFirestoreDbService, 'getUpdatedDataItemsSinceClientLastConnectedToRemoteDb')
-      reconcileDataService.synchronizeLocalAndRemoteData()
+      reconcileDataService.synchronizeRemoteAndLocalDataSinceLastConnected()
       expect(getNewDataSpy).toBeCalledWith('Questions', new Date("2019-01-15"))
 
     })
