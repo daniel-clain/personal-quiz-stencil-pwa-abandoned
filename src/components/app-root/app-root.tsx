@@ -41,7 +41,7 @@ export class AppRoot {
     this.questionService = new QuestionService(this.dataService)
     this.quizGenerator = new QuizGenertator(this.questionService)
     this.dataService.setup()
-    .then(() => console.log('DING! data service is setup !!');)
+    .then(() => console.log('DING! data service is setup !!'))
   }
 
   render() {
