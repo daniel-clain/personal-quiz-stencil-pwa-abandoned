@@ -1,0 +1,7 @@
+Scenario
+- correct state when using for the first time with no internet
+Expected outcome
+- no attempts to get data from remote
+- no errors
+- ready to add data to local db that will reconcile on first use when connected to internet
+- does not attempt to run script relative to getting remote data, or script based on last connected to remote
